@@ -1025,7 +1025,7 @@ function NumField({ label, value, onChange }) {
   );
 }
 
-function AdminSkinForm({ onAdd, client }) {
+function AdminSkinForm({ onAdd, client: adminClient }) {
   const [f, setF] = useState({
     name: "",
     type: "Miltiq",
@@ -1070,7 +1070,7 @@ function AdminSkinForm({ onAdd, client }) {
         onClick={async () => {
           if (!f.name.trim()) return;
           try {
-            const res = await client.post("/admin/skins", {
+            const res = await adminClient.post("/admin/skins", {
               name: f.name,
               type: f.type,
               rarity: f.rarity,
