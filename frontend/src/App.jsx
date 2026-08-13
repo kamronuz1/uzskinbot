@@ -1049,23 +1049,36 @@ function AdminSkinForm({ onAdd, client: adminClient }) {
       </div>
       <div className="grid grid-cols-2 gap-2 mb-2">
         <label className="flex flex-col gap-1">
-          <span className="text-[10px] font-semibold" style={{ color: "#7C8399" }}>
+          <span
+            className="text-[10px] font-semibold"
+            style={{ color: "#7C8399" }}
+          >
             Rarity
           </span>
           <select
             value={f.rarity}
             onChange={(e) => set("rarity")(e.target.value)}
             className="rounded-lg px-2.5 py-2 text-xs font-medium outline-none"
-            style={{ background: "#0A0D14", border: "1px solid #232838", color: "#EDEFF6" }}
+            style={{
+              background: "#0A0D14",
+              border: "1px solid #232838",
+              color: "#EDEFF6",
+            }}
           >
             {RARITY_ORDER.map((r) => (
-              <option key={r} value={r}>{RARITY[r].label}</option>
+              <option key={r} value={r}>
+                {RARITY[r].label}
+              </option>
             ))}
           </select>
         </label>
         <NumField label="Narxi ($)" value={f.price} onChange={set("price")} />
       </div>
-      <NumField label="Rasm URL (ixtiyoriy)" value={f.image} onChange={set("image")} />
+      <NumField
+        label="Rasm URL (ixtiyoriy)"
+        value={f.image}
+        onChange={set("image")}
+      />
       <button
         onClick={async () => {
           if (!f.name.trim()) return;
@@ -1078,13 +1091,22 @@ function AdminSkinForm({ onAdd, client: adminClient }) {
               image: f.image,
             });
             onAdd(norm(res.data));
-            setF({ name: "", type: "Miltiq", rarity: "common", price: "1", image: "" });
+            setF({
+              name: "",
+              type: "Miltiq",
+              rarity: "common",
+              price: "1",
+              image: "",
+            });
           } catch (err) {
             alert(err.response?.data?.error || "Xatolik yuz berdi");
           }
         }}
         className="mt-3 w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5"
-        style={{ background: "linear-gradient(90deg,#7C5CFC,#22E5C8)", color: "#0A0D14" }}
+        style={{
+          background: "linear-gradient(90deg,#7C5CFC,#22E5C8)",
+          color: "#0A0D14",
+        }}
       >
         <Plus size={14} /> Skin qo‘shish
       </button>
@@ -1106,7 +1128,8 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
   });
   const set = (key) => (val) => setF((prev) => ({ ...prev, [key]: val }));
   const sum = ["common", "rare", "epic", "legend", "myth"].reduce(
-    (a, r) => a + (parseFloat(f[r]) || 0), 0
+    (a, r) => a + (parseFloat(f[r]) || 0),
+    0,
   );
 
   return (
@@ -1121,10 +1144,17 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
         <NumField label="Nomi" value={f.name} onChange={set("name")} />
         <NumField label="Narxi ($)" value={f.price} onChange={set("price")} />
       </div>
-      <NumField label="Rasm URL (ixtiyoriy)" value={f.image} onChange={set("image")} />
+      <NumField
+        label="Rasm URL (ixtiyoriy)"
+        value={f.image}
+        onChange={set("image")}
+      />
       <div className="mt-2.5">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[10px] font-semibold" style={{ color: "#7C8399" }}>
+          <span
+            className="text-[10px] font-semibold"
+            style={{ color: "#7C8399" }}
+          >
             Ehtimollar (%)
           </span>
           <span
@@ -1137,14 +1167,21 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
         <div className="grid grid-cols-5 gap-1.5">
           {RARITY_ORDER.map((r) => (
             <label key={r} className="flex flex-col gap-1 items-center">
-              <span className="text-[8px] font-semibold" style={{ color: RARITY[r].color }}>
+              <span
+                className="text-[8px] font-semibold"
+                style={{ color: RARITY[r].color }}
+              >
                 {RARITY[r].label}
               </span>
               <input
                 value={f[r]}
                 onChange={(e) => set(r)(e.target.value)}
                 className="w-full text-center rounded-lg px-1 py-1.5 text-[10px] font-bold outline-none"
-                style={{ background: "#0A0D14", border: `1px solid ${RARITY[r].color}44`, color: "#EDEFF6" }}
+                style={{
+                  background: "#0A0D14",
+                  border: `1px solid ${RARITY[r].color}44`,
+                  color: "#EDEFF6",
+                }}
               />
             </label>
           ))}
@@ -1169,15 +1206,25 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
             });
             onAdd(norm(res.data));
             setF({
-              name: "", price: "5", color: "#7C5CFC", image: "",
-              common: "50", rare: "30", epic: "14", legend: "5", myth: "1",
+              name: "",
+              price: "5",
+              color: "#7C5CFC",
+              image: "",
+              common: "50",
+              rare: "30",
+              epic: "14",
+              legend: "5",
+              myth: "1",
             });
           } catch (err) {
             alert(err.response?.data?.error || "Xatolik yuz berdi");
           }
         }}
         className="mt-3 w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5"
-        style={{ background: "linear-gradient(90deg,#7C5CFC,#22E5C8)", color: "#0A0D14" }}
+        style={{
+          background: "linear-gradient(90deg,#7C5CFC,#22E5C8)",
+          color: "#0A0D14",
+        }}
       >
         <Plus size={14} /> Case qo‘shish
       </button>
@@ -1185,7 +1232,16 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
   );
 }
 
-function AdminScreen({ cases, skins, onAddCase, onAddSkin, onDeleteCase, onDeleteSkin, onClose, token }) {
+function AdminScreen({
+  cases,
+  skins,
+  onAddCase,
+  onAddSkin,
+  onDeleteCase,
+  onDeleteSkin,
+  onClose,
+  token,
+}) {
   const adminClient = useMemo(() => createAdminClient(token), [token]);
   const [tab, setTab] = useState("cases");
   const [mounted, setMounted] = useState(false);
@@ -1210,7 +1266,9 @@ function AdminScreen({ cases, skins, onAddCase, onAddSkin, onDeleteCase, onDelet
         style={{
           background: "#05060A",
           border: "1px solid #1B2030",
-          transform: mounted ? "translateY(0) scale(1)" : "translateY(16px) scale(0.98)",
+          transform: mounted
+            ? "translateY(0) scale(1)"
+            : "translateY(16px) scale(0.98)",
           transition: "transform .28s cubic-bezier(0.16,1,0.3,1)",
         }}
       >
@@ -1459,6 +1517,21 @@ export default function App() {
         console.error("MARKET XATOSI:", err.response?.data || err.message);
       }
 
+      // Agar link orqali referral kodi bilan kirgan bo'lsa — avtomatik bog'laymiz
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const refCode = params.get("ref");
+        if (refCode) {
+          await client.post("/referral/bind", { refCode });
+        }
+      } catch (err) {
+        // Allaqachon bog'langan yoki o'z-o'ziga referral bo'lsa backend 400 qaytaradi — bu normal, e'tibor bermaymiz
+        console.log(
+          "Referral bind:",
+          err.response?.data?.error || "o'tkazib yuborildi",
+        );
+      }
+
       setLoaded(true);
     })();
   }, []);
@@ -1674,7 +1747,11 @@ export default function App() {
           >
             <div
               className="px-4 py-3 rounded-xl text-xs font-semibold"
-              style={{ background: "#12151F", color: "#7C8399", border: "1px solid #232838" }}
+              style={{
+                background: "#12151F",
+                color: "#7C8399",
+                border: "1px solid #232838",
+              }}
             >
               Tekshirilmoqda...
             </div>
