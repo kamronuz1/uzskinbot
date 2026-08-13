@@ -1593,11 +1593,16 @@ export default function App() {
     }
   };
 
-  const handleDeposit = (amount) => {
-    if (!amount) return;
-    setBalance((b) => +(b + amount).toFixed(2));
-    addTx("Deposit (demo)", amount);
-  };
+  const handleDeposit = async (amount) => {
+  if (!amount) return;
+  try {
+    const res = await client.post("/balance/deposit", { amount });
+    setBalance(res.data.balance);
+    addTx("Deposit", amount);
+  } catch (err) {
+    alert(err.response?.data?.error || "Xatolik");
+  }
+};
 
   // Admin tugmasi bosilganda: parol so'raladi, DARHOL backendga
   // tekshirtiriladi (GET /admin/verify) — noto'g'ri bo'lsa panel
