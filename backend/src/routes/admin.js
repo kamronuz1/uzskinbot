@@ -6,6 +6,8 @@ const adminAuth = require('../middleware/adminAuth');
 
 router.use(adminAuth); // BU QATOR MUHIM — barcha pastdagi route'larni himoyalaydi
 
+router.get('/verify', (req, res) => res.json({ ok: true }));
+
 router.post('/cases', async (req, res) => {
   const cs = await Case.create(req.body);
   res.json(cs);

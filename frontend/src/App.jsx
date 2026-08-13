@@ -162,7 +162,7 @@ function SkinCard({ skin, onClick, badge, size = "md" }) {
 }
 
 /* ---------------------------------------------------------------
-   CASE OPENING — endi haqiqiy natijani backenddan oladi
+   CASE OPENING — haqiqiy natijani backenddan oladi
 ----------------------------------------------------------------*/
 const ITEM_W = 108;
 
@@ -1092,7 +1092,7 @@ function AdminSkinForm({ onAdd, client: adminClient }) {
   );
 }
 
-function AdminCaseForm({ onAdd, client }) {
+function AdminCaseForm({ onAdd, client: adminClient }) {
   const [f, setF] = useState({
     name: "",
     price: "5",
@@ -1154,7 +1154,7 @@ function AdminCaseForm({ onAdd, client }) {
         onClick={async () => {
           if (!f.name.trim()) return;
           try {
-            const res = await client.post("/admin/cases", {
+            const res = await adminClient.post("/admin/cases", {
               name: f.name,
               price: parseFloat(f.price) || 0,
               color: f.color,
@@ -1188,15 +1188,31 @@ function AdminCaseForm({ onAdd, client }) {
 function AdminScreen({ cases, skins, onAddCase, onAddSkin, onDeleteCase, onDeleteSkin, onClose, token }) {
   const adminClient = useMemo(() => createAdminClient(token), [token]);
   const [tab, setTab] = useState("cases");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // Kirish animatsiyasi uchun — bir kadr keyin true bo'ladi
+    const t = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(t);
+  }, []);
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: "rgba(5,6,10,.85)" }}
+      style={{
+        background: "rgba(5,6,10,.85)",
+        opacity: mounted ? 1 : 0,
+        transition: "opacity .25s ease",
+      }}
     >
       <div
         className="w-full max-w-[380px] h-[720px] rounded-[28px] overflow-hidden flex flex-col"
-        style={{ background: "#05060A", border: "1px solid #1B2030" }}
+        style={{
+          background: "#05060A",
+          border: "1px solid #1B2030",
+          transform: mounted ? "translateY(0) scale(1)" : "translateY(16px) scale(0.98)",
+          transition: "transform .28s cubic-bezier(0.16,1,0.3,1)",
+        }}
       >
         <div className="flex items-center gap-2 px-4 pt-5 pb-3">
           <button
@@ -1242,7 +1258,6 @@ function AdminScreen({ cases, skins, onAddCase, onAddSkin, onDeleteCase, onDelet
         <div className="flex-1 overflow-y-auto px-4 pb-6">
           {tab === "cases" && (
             <>
-              {/* Bu yerda client={adminClient} uzatildi */}
               <AdminCaseForm onAdd={onAddCase} client={adminClient} />
               <div className="flex flex-col gap-2">
                 {cases.map((cs) => (
@@ -1290,7 +1305,6 @@ function AdminScreen({ cases, skins, onAddCase, onAddSkin, onDeleteCase, onDelet
 
           {tab === "skins" && (
             <>
-              {/* Bu yerda ham client={adminClient} uzatildi */}
               <AdminSkinForm onAdd={onAddSkin} client={adminClient} />
               <div className="flex flex-col gap-2">
                 {skins.map((s) => {
@@ -1359,6 +1373,7 @@ export default function App() {
   const [tab, setTab] = useState("home");
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminToken, setAdminToken] = useState("");
+  const [adminChecking, setAdminChecking] = useState(false);
   const [cases, setCases] = useState([]);
   const [skins, setSkins] = useState([]);
   const [balance, setBalance] = useState(0);
@@ -1376,19 +1391,12 @@ export default function App() {
   const [listings, setListings] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
+  // Har bir so'rov ALOHIDA try/catch bilan — bittasi xato bersa ham
+  // qolganlari ishlashda davom etadi. Xato konsolda ko'rinadi.
   useEffect(() => {
     (async () => {
       try {
-        const [meRes, casesRes, skinsRes, dailyRes, invRes, refRes, listRes] =
-          await Promise.all([
-            client.get("/auth/me"),
-            client.get("/cases"),
-            client.get("/skins"),
-            client.get("/daily/status"),
-            client.get("/inventory"),
-            client.get("/referral/stats"),
-            client.get("/marketplace"),
-          ]);
+        const meRes = await client.get("/auth/me");
         const u = meRes.data.user;
         setUser({
           name: u.firstName || u.username || "Foydalanuvchi",
@@ -1397,13 +1405,49 @@ export default function App() {
           referralCode: u.referralCode,
         });
         setBalance(u.balance);
+      } catch (err) {
+        console.error("AUTH XATOSI:", err.response?.data || err.message);
+      }
+
+      try {
+        const casesRes = await client.get("/cases");
         setCases(casesRes.data.map(norm));
+      } catch (err) {
+        console.error("CASES XATOSI:", err.response?.data || err.message);
+      }
+
+      try {
+        const skinsRes = await client.get("/skins");
         setSkins(skinsRes.data.map(norm));
+      } catch (err) {
+        console.error("SKINS XATOSI:", err.response?.data || err.message);
+      }
+
+      try {
+        const dailyRes = await client.get("/daily/status");
         setDailyAvailable(dailyRes.data.available);
+      } catch (err) {
+        console.error("DAILY XATOSI:", err.response?.data || err.message);
+      }
+
+      try {
+        const invRes = await client.get("/inventory");
         setInventory(
           invRes.data.map((i) => ({ ...norm(i.skin), _invId: i._id })),
         );
+      } catch (err) {
+        console.error("INVENTORY XATOSI:", err.response?.data || err.message);
+      }
+
+      try {
+        const refRes = await client.get("/referral/stats");
         setRefStats(refRes.data);
+      } catch (err) {
+        console.error("REFERRAL XATOSI:", err.response?.data || err.message);
+      }
+
+      try {
+        const listRes = await client.get("/marketplace");
         setListings(
           listRes.data.map((l) => ({
             ...l,
@@ -1412,23 +1456,21 @@ export default function App() {
           })),
         );
       } catch (err) {
-        console.error("Yuklashda xato:", err);
-      } finally {
-        setLoaded(true);
+        console.error("MARKET XATOSI:", err.response?.data || err.message);
       }
+
+      setLoaded(true);
     })();
   }, []);
 
   const addTx = (label, amt) =>
     setTxs((t) => [{ label, amt, time: "hozir" }, ...t].slice(0, 20));
 
-  // Case ochilgan zahoti (pul yechilgach) balansni yangilaymiz
   const handleOpened = (newBalance, price, caseName) => {
     setBalance(newBalance);
     addTx(`Case ochish (${caseName})`, -price);
   };
 
-  // Sotish/Inventarga tanlanganidan keyin
   const handleResolve = (won, action, newBalance) => {
     if (action === "sell") {
       setBalance(newBalance);
@@ -1479,10 +1521,30 @@ export default function App() {
 
   const handleDeposit = (amount) => {
     if (!amount) return;
-    // Demo: real to'lov ulanmagan, faqat lokal ko'rsatish uchun.
-    // Real loyihada bu yerda to'lov provayderiga yo'naltirilishi kerak.
     setBalance((b) => +(b + amount).toFixed(2));
     addTx("Deposit (demo)", amount);
+  };
+
+  // Admin tugmasi bosilganda: parol so'raladi, DARHOL backendga
+  // tekshirtiriladi (GET /admin/verify) — noto'g'ri bo'lsa panel
+  // ochilmaydi va xato xabari chiqadi.
+  const handleAdminClick = async () => {
+    const token = window.prompt("Admin parolini kiriting:");
+    if (!token) return;
+    setAdminChecking(true);
+    try {
+      await createAdminClient(token).get("/admin/verify");
+      setAdminToken(token);
+      setShowAdmin(true);
+    } catch (err) {
+      if (err.response?.status === 403 || err.response?.status === 401) {
+        alert("Parol xato! Qayta urinib ko'ring.");
+      } else {
+        alert("Tekshirishda xatolik: server bilan bog'lanib bo'lmadi.");
+      }
+    } finally {
+      setAdminChecking(false);
+    }
   };
 
   if (!loaded) {
@@ -1529,13 +1591,7 @@ export default function App() {
               dailyAvailable={dailyAvailable}
               onDaily={handleDaily}
               nav={setTab}
-              onAdmin={() => {
-                const token = prompt("Admin parolini kiriting:");
-                if (token) {
-                  setAdminToken(token);
-                  setShowAdmin(true);
-                }
-              }}
+              onAdmin={handleAdminClick}
             />
           )}
           {tab === "cases" && (
@@ -1610,6 +1666,20 @@ export default function App() {
             })}
           </div>
         </div>
+
+        {adminChecking && (
+          <div
+            className="fixed inset-0 z-[60] flex items-center justify-center"
+            style={{ background: "rgba(5,6,10,.6)" }}
+          >
+            <div
+              className="px-4 py-3 rounded-xl text-xs font-semibold"
+              style={{ background: "#12151F", color: "#7C8399", border: "1px solid #232838" }}
+            >
+              Tekshirilmoqda...
+            </div>
+          </div>
+        )}
 
         {openCase && (
           <CaseOpenModal
