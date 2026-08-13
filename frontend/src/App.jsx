@@ -986,6 +986,7 @@ function ProfileScreen({ user, balance, inventory, refCode, refStats }) {
           </span>
           <button
             onClick={() => {
+              navigator.clipboard.writeText(link).catch(() => {});
               setCopied(true);
               setTimeout(() => setCopied(false), 1500);
             }}
