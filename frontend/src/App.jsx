@@ -191,6 +191,7 @@ function CaseOpenModal({ cs, skins, balance, onClose, onOpened, onResolve }) {
   const [flash, setFlash] = useState(false);
   const [errMsg, setErrMsg] = useState("");
   const containerRef = useRef(null);
+  const resolvedRef = useRef(true); // true = joriy natija bo'yicha tanlov qilingan (yoki hali ochilmagan)
   const canAfford = balance >= cs.price;
   const CaseIcon = iconFor(cs.id);
 
@@ -198,6 +199,7 @@ function CaseOpenModal({ cs, skins, balance, onClose, onOpened, onResolve }) {
     if (!canAfford || phase !== "idle") return;
     setErrMsg("");
     setPhase("loading");
+    resolvedRef.current = false; // yangi natija — hali tanlov qilinmagan
     try {
       const res = await client.post(`/cases/${cs.id}/open`);
       const winner = norm(res.data.skin);
@@ -229,12 +231,15 @@ function CaseOpenModal({ cs, skins, balance, onClose, onOpened, onResolve }) {
     } catch (err) {
       setErrMsg(err.response?.data?.error || "Xatolik yuz berdi");
       setPhase("idle");
+      resolvedRef.current = true;
     }
   };
 
   const R = won ? RARITY[won.rarity] : null;
   const isBig = won && (won.rarity === "legend" || won.rarity === "myth");
 
+  // Sotish yoki Inventarga tanlanganda — MODAL YOPILMAYDI, case o'zida
+  // qoladi, xohlasa darhol qayta ochishi mumkin. Faqat X orqali chiqiladi.
   const finish = async (action) => {
     if (action === "sell") {
       try {
@@ -245,6 +250,22 @@ function CaseOpenModal({ cs, skins, balance, onClose, onOpened, onResolve }) {
         return;
       }
     } else {
+      onResolve(won, "keep", balance);
+    }
+    resolvedRef.current = true;
+    setWon(null);
+    setPhase("idle");
+    setReel([]);
+    setOffset(0);
+  };
+
+  // X bosilganda: agar natija chiqqan-u, lekin hali tanlov qilinmagan
+  // bo'lsa (na sotilgan, na "Inventarga" bosilgan) — avtomatik
+  // inventarga qo'shib yuboramiz (backendda item allaqachon yaratilgan,
+  // shunchaki lokal ro'yxatga qo'shib qo'yamiz).
+  const handleClose = () => {
+    if (won && !resolvedRef.current) {
+      resolvedRef.current = true;
       onResolve(won, "keep", balance);
     }
     onClose();
@@ -290,9 +311,10 @@ function CaseOpenModal({ cs, skins, balance, onClose, onOpened, onResolve }) {
             </span>
           </div>
           <button
-            onClick={onClose}
+            onClick={phase === "loading" ? undefined : handleClose}
+            disabled={phase === "loading"}
             className="w-7 h-7 rounded-full flex items-center justify-center"
-            style={{ background: "#1B2030" }}
+            style={{ background: "#1B2030", opacity: phase === "loading" ? 0.4 : 1 }}
           >
             <X size={14} color="#7C8399" />
           </button>
