@@ -33,15 +33,15 @@ import {
    TOKENS
 ----------------------------------------------------------------*/
 const RARITY = {
-  common: { label: "Oddiy", color: "#8A93A6", glow: "rgba(138,147,166,.35)" },
-  rare: { label: "Noyob", color: "#4EA1FF", glow: "rgba(78,161,255,.45)" },
-  epic: { label: "Epik", color: "#B24BFF", glow: "rgba(178,75,255,.5)" },
+  common: { label: "Oddiy", color: "#8A93A6", glow: "rgba(138,147,166,.32)" },
+  rare: { label: "Noyob", color: "#4EA1FF", glow: "rgba(78,161,255,.48)" },
+  epic: { label: "Epik", color: "#B24BFF", glow: "rgba(178,75,255,.56)" },
   legend: {
     label: "Afsonaviy",
     color: "#FFB020",
-    glow: "rgba(255,176,32,.55)",
+    glow: "rgba(255,176,32,.62)",
   },
-  myth: { label: "Mif", color: "#FF3B6E", glow: "rgba(255,59,110,.6)" },
+  myth: { label: "Mif", color: "#FF3B6E", glow: "rgba(255,59,110,.68)" },
 };
 const RARITY_ORDER = ["common", "rare", "epic", "legend", "myth"];
 const ICONS = [Sword, Shield, Zap, Gem, Flame, Star, Crown];
@@ -64,7 +64,8 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 // MongoDB obyektlarida _id bo'ladi, id emas — shu yerda normalizatsiya qilamiz
 const norm = (o) => (o ? { ...o, id: o._id || o.id } : o);
 
-/* Thumb: rasm bo'lsa ko'rsatadi, bo'lmasa ikonka placeholder */
+/* Thumb: rasm bo'lsa ko'rsatadi, bo'lmasa rarity rangiga mos, KUCHLI
+   tiniqlikdagi radial fon + porlab turgan ikonka chizadi. */
 function Thumb({ image, color, glow, Icon, size = 32 }) {
   const style = image
     ? {
@@ -73,14 +74,21 @@ function Thumb({ image, color, glow, Icon, size = 32 }) {
         backgroundPosition: "center",
       }
     : {
-        background: `radial-gradient(circle at 50% 32%, ${glow}, transparent 72%)`,
+        background: `radial-gradient(circle at 50% 32%, ${glow} 0%, ${glow} 38%, transparent 82%)`,
       };
   return (
     <div
       className="w-full h-full flex items-center justify-center"
       style={style}
     >
-      {!image && <Icon size={size} color={color} strokeWidth={1.5} />}
+      {!image && (
+        <Icon
+          size={size}
+          color={color}
+          strokeWidth={1.5}
+          style={{ filter: `drop-shadow(0 0 10px ${glow})` }}
+        />
+      )}
     </div>
   );
 }
@@ -114,24 +122,38 @@ function ScreenHeader({ title, sub, right }) {
     </div>
   );
 }
+
+/* SkinCard — rarity darajasiga qarab fon/border/glow KUCHAYADI.
+   legend/myth uchun qalinroq porlab turgan chegara, epik uchun
+   o'rtacha, oddiy/noyob uchun yengil. */
 function SkinCard({ skin, onClick, badge, size = "md" }) {
   const R = RARITY[skin.rarity];
   const Icon = iconFor(skin.id);
   const h = size === "lg" ? "h-36" : size === "sm" ? "h-24" : "h-28";
+  const strong = skin.rarity === "legend" || skin.rarity === "myth";
+  const mid = skin.rarity === "epic";
   return (
     <button
       onClick={onClick}
       className="relative rounded-2xl overflow-hidden text-left w-full transition-transform active:scale-[0.97]"
       style={{
         background: "linear-gradient(160deg,#171B27,#12151F)",
-        border: `1px solid ${R.color}33`,
+        border: `${strong ? 2 : 1}px solid ${R.color}${strong ? "99" : mid ? "55" : "33"}`,
+        boxShadow: strong
+          ? `0 0 22px ${R.glow}`
+          : mid
+          ? `0 0 10px ${R.glow}`
+          : "none",
       }}
     >
       <div className={`relative ${h}`}>
         <Thumb image={skin.image} color={R.color} glow={R.glow} Icon={Icon} />
         {badge}
       </div>
-      <div className="px-2.5 pb-2.5 pt-1.5">
+      <div
+        className="px-2.5 pb-2.5 pt-1.5"
+        style={{ background: strong ? `${R.color}14` : "transparent" }}
+      >
         <div
           className="text-[11px] font-medium truncate"
           style={{ color: "#EDEFF6" }}
@@ -140,7 +162,7 @@ function SkinCard({ skin, onClick, badge, size = "md" }) {
         </div>
         <div className="flex items-center justify-between mt-1">
           <span
-            className="text-[9px] uppercase tracking-wide"
+            className="text-[9px] uppercase tracking-wide font-bold"
             style={{ color: R.color }}
           >
             {R.label}
@@ -154,7 +176,7 @@ function SkinCard({ skin, onClick, badge, size = "md" }) {
         </div>
       </div>
       <div
-        className="absolute top-0 left-0 right-0 h-[2px]"
+        className="absolute top-0 left-0 right-0 h-[3px]"
         style={{ background: R.color }}
       />
     </button>
@@ -199,7 +221,7 @@ function CaseOpenModal({ cs, skins, balance, onClose, onOpened, onResolve }) {
     if (!canAfford || phase !== "idle") return;
     setErrMsg("");
     setPhase("loading");
-    resolvedRef.current = false; // yangi natija — hali tanlov qilinmagan
+    resolvedRef.current = false;
     try {
       const res = await client.post(`/cases/${cs.id}/open`);
       const winner = norm(res.data.skin);
@@ -238,8 +260,8 @@ function CaseOpenModal({ cs, skins, balance, onClose, onOpened, onResolve }) {
   const R = won ? RARITY[won.rarity] : null;
   const isBig = won && (won.rarity === "legend" || won.rarity === "myth");
 
-  // Sotish yoki Inventarga tanlanganda — MODAL YOPILMAYDI, case o'zida
-  // qoladi, xohlasa darhol qayta ochishi mumkin. Faqat X orqali chiqiladi.
+  // Sotish/Inventarga tanlanganda MODAL YOPILMAYDI — case o'zida
+  // ochiq qoladi, darhol qayta ochish mumkin.
   const finish = async (action) => {
     if (action === "sell") {
       try {
@@ -259,10 +281,8 @@ function CaseOpenModal({ cs, skins, balance, onClose, onOpened, onResolve }) {
     setOffset(0);
   };
 
-  // X bosilganda: agar natija chiqqan-u, lekin hali tanlov qilinmagan
-  // bo'lsa (na sotilgan, na "Inventarga" bosilgan) — avtomatik
-  // inventarga qo'shib yuboramiz (backendda item allaqachon yaratilgan,
-  // shunchaki lokal ro'yxatga qo'shib qo'yamiz).
+  // X bosilganda: natija chiqqan-u hali tanlov qilinmagan bo'lsa —
+  // avtomatik ravishda Inventarga qo'shib yuboriladi.
   const handleClose = () => {
     if (won && !resolvedRef.current) {
       resolvedRef.current = true;
@@ -314,7 +334,10 @@ function CaseOpenModal({ cs, skins, balance, onClose, onOpened, onResolve }) {
             onClick={phase === "loading" ? undefined : handleClose}
             disabled={phase === "loading"}
             className="w-7 h-7 rounded-full flex items-center justify-center"
-            style={{ background: "#1B2030", opacity: phase === "loading" ? 0.4 : 1 }}
+            style={{
+              background: "#1B2030",
+              opacity: phase === "loading" ? 0.4 : 1,
+            }}
           >
             <X size={14} color="#7C8399" />
           </button>
@@ -398,7 +421,7 @@ function CaseOpenModal({ cs, skins, balance, onClose, onOpened, onResolve }) {
             <div className="flex flex-col items-center py-2">
               <div
                 className="relative w-32 h-32 rounded-2xl overflow-hidden flex items-center justify-center mb-3 animate-[dropIn_.5s_ease-out]"
-                style={{ border: `1px solid ${R.color}55` }}
+                style={{ border: `2px solid ${R.color}88`, boxShadow: `0 0 24px ${R.glow}` }}
               >
                 <Thumb
                   image={won.image}
@@ -475,6 +498,212 @@ function CaseOpenModal({ cs, skins, balance, onClose, onOpened, onResolve }) {
             )}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------
+   KO'P DONA OCHISH NATIJASI
+----------------------------------------------------------------*/
+function BulkResultModal({ results, onClose, onSellAll, selling }) {
+  const total = results.reduce((a, r) => a + r.skin.price, 0);
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      style={{ background: "rgba(5,6,10,.78)", backdropFilter: "blur(6px)" }}
+    >
+      <div
+        className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden flex flex-col"
+        style={{ background: "#12151F", border: "1px solid #232838", maxHeight: "85vh" }}
+      >
+        <div
+          className="flex items-center justify-between px-4 py-3.5"
+          style={{ borderBottom: "1px solid #1B2030" }}
+        >
+          <span className="text-sm font-semibold" style={{ color: "#EDEFF6" }}>
+            Natijalar ({results.length})
+          </span>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 rounded-full flex items-center justify-center"
+            style={{ background: "#1B2030" }}
+          >
+            <X size={14} color="#7C8399" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="grid grid-cols-3 gap-2">
+            {results.map((r, i) => (
+              <SkinCard key={i} skin={r.skin} size="sm" />
+            ))}
+          </div>
+        </div>
+        <div
+          className="px-4 pt-1 pb-2 text-xs font-semibold text-center"
+          style={{ color: "#7C8399" }}
+        >
+          Jami qiymat: <span style={{ color: "#22E5C8" }}>${fmt(total)}</span>
+        </div>
+        <div className="p-4 pt-1 flex gap-2">
+          <button
+            onClick={onSellAll}
+            disabled={selling}
+            className="flex-1 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5"
+            style={{
+              background: "linear-gradient(90deg,#22E5C8,#4EA1FF)",
+              color: "#0A0D14",
+              opacity: selling ? 0.6 : 1,
+            }}
+          >
+            <Tag size={14} /> {selling ? "Sotilmoqda..." : "Hammasini sotish"}
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 py-3 rounded-2xl text-sm font-semibold"
+            style={{ background: "#1B2030", color: "#EDEFF6" }}
+          >
+            Inventarga qoldirish
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------
+   CASE DETAIL SCREEN — case bosilganda ochiladigan to'liq sahifa:
+   katta banner, narx, miqdor tanlash, "Ochish" tugmasi, pastda
+   shu case'dagi barcha skinlar (rarity bo'yicha kamayish tartibida)
+----------------------------------------------------------------*/
+function CaseDetailScreen({ cs, skins, balance, onBack, onOpenSingle, onOpenBulk }) {
+  const [qty, setQty] = useState(1);
+  const Icon = iconFor(cs.id);
+  const eligible = skins
+    .filter((s) => (cs.odds?.[s.rarity] || 0) > 0)
+    .sort(
+      (a, b) =>
+        RARITY_ORDER.indexOf(b.rarity) - RARITY_ORDER.indexOf(a.rarity) ||
+        b.price - a.price,
+    );
+  const totalPrice = cs.price * qty;
+  const canAfford = balance >= totalPrice;
+
+  return (
+    <div className="pb-24">
+      <div className="flex items-center justify-between px-4 pt-5 pb-3">
+        <button
+          onClick={onBack}
+          className="w-9 h-9 rounded-xl flex items-center justify-center"
+          style={{ background: "#12151F", border: "1px solid #232838" }}
+        >
+          <ArrowLeft size={16} color="#7C8399" />
+        </button>
+        <span className="text-sm font-bold" style={{ color: "#EDEFF6" }}>
+          {cs.name}
+        </span>
+        <div className="w-9" />
+      </div>
+
+      <div
+        className="mx-4 rounded-3xl overflow-hidden relative mb-5"
+        style={{ minHeight: 250 }}
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(120% 90% at 50% 0%, ${cs.color}55 0%, transparent 55%), linear-gradient(180deg, #171B27 0%, #0A0D14 55%, #05060A 100%)`,
+          }}
+        />
+        <div className="relative flex flex-col items-center pt-8 pb-6 px-4">
+          <div
+            className="w-24 h-24 rounded-3xl flex items-center justify-center mb-4"
+            style={{
+              background: `radial-gradient(circle, ${cs.color}40, transparent 72%)`,
+              border: `1px solid ${cs.color}66`,
+            }}
+          >
+            <Icon
+              size={44}
+              color={cs.color}
+              strokeWidth={1.3}
+              style={{ filter: `drop-shadow(0 0 14px ${cs.color}88)` }}
+            />
+          </div>
+          <div
+            className="text-lg font-extrabold mb-1"
+            style={{ color: "#EDEFF6" }}
+          >
+            {cs.name}
+          </div>
+          <div className="flex items-center gap-1.5 mb-5">
+            <Gift size={14} color={cs.color} />
+            <span className="text-base font-bold" style={{ color: cs.color }}>
+              ${fmt(cs.price)}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3 mb-4">
+            <button
+              onClick={() => setQty((q) => Math.max(1, q - 1))}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-base font-bold"
+              style={{
+                background: "#171B27",
+                color: "#EDEFF6",
+                border: "1px solid #232838",
+              }}
+            >
+              −
+            </button>
+            <span
+              className="text-sm font-bold w-6 text-center"
+              style={{ color: "#EDEFF6" }}
+            >
+              {qty}
+            </span>
+            <button
+              onClick={() => setQty((q) => Math.min(10, q + 1))}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-base font-bold"
+              style={{
+                background: "#171B27",
+                color: "#EDEFF6",
+                border: "1px solid #232838",
+              }}
+            >
+              +
+            </button>
+          </div>
+
+          <button
+            onClick={() =>
+              qty === 1 ? onOpenSingle(cs) : onOpenBulk(cs, qty)
+            }
+            disabled={!canAfford}
+            className="w-full py-3.5 rounded-2xl font-bold text-sm"
+            style={{
+              background: canAfford
+                ? "linear-gradient(90deg,#7C5CFC,#22E5C8)"
+                : "#1B2030",
+              color: canAfford ? "#0A0D14" : "#7C8399",
+            }}
+          >
+            {canAfford ? `Ochish — $${fmt(totalPrice)}` : "Balans yetarli emas"}
+          </button>
+        </div>
+      </div>
+
+      <div className="px-4 flex items-center justify-between mb-3">
+        <h2 className="text-sm font-bold" style={{ color: "#EDEFF6" }}>
+          Ushbu case'dagi skinlar
+        </h2>
+        <span className="text-[11px]" style={{ color: "#7C8399" }}>
+          {eligible.length} ta
+        </span>
+      </div>
+      <div className="px-4 grid grid-cols-2 gap-3">
+        {eligible.map((s) => (
+          <SkinCard key={s.id} skin={s} size="lg" />
+        ))}
       </div>
     </div>
   );
@@ -713,7 +942,7 @@ function CasesScreen({ cases, onOpenCase }) {
                   className="text-[10px] mt-0.5"
                   style={{ color: "#7C8399" }}
                 >
-                  ochish →
+                  ko‘rish →
                 </div>
               </div>
             </button>
@@ -1072,36 +1301,23 @@ function AdminSkinForm({ onAdd, client: adminClient }) {
       </div>
       <div className="grid grid-cols-2 gap-2 mb-2">
         <label className="flex flex-col gap-1">
-          <span
-            className="text-[10px] font-semibold"
-            style={{ color: "#7C8399" }}
-          >
+          <span className="text-[10px] font-semibold" style={{ color: "#7C8399" }}>
             Rarity
           </span>
           <select
             value={f.rarity}
             onChange={(e) => set("rarity")(e.target.value)}
             className="rounded-lg px-2.5 py-2 text-xs font-medium outline-none"
-            style={{
-              background: "#0A0D14",
-              border: "1px solid #232838",
-              color: "#EDEFF6",
-            }}
+            style={{ background: "#0A0D14", border: "1px solid #232838", color: "#EDEFF6" }}
           >
             {RARITY_ORDER.map((r) => (
-              <option key={r} value={r}>
-                {RARITY[r].label}
-              </option>
+              <option key={r} value={r}>{RARITY[r].label}</option>
             ))}
           </select>
         </label>
         <NumField label="Narxi ($)" value={f.price} onChange={set("price")} />
       </div>
-      <NumField
-        label="Rasm URL (ixtiyoriy)"
-        value={f.image}
-        onChange={set("image")}
-      />
+      <NumField label="Rasm URL (ixtiyoriy)" value={f.image} onChange={set("image")} />
       <button
         onClick={async () => {
           if (!f.name.trim()) return;
@@ -1114,22 +1330,13 @@ function AdminSkinForm({ onAdd, client: adminClient }) {
               image: f.image,
             });
             onAdd(norm(res.data));
-            setF({
-              name: "",
-              type: "Miltiq",
-              rarity: "common",
-              price: "1",
-              image: "",
-            });
+            setF({ name: "", type: "Miltiq", rarity: "common", price: "1", image: "" });
           } catch (err) {
             alert(err.response?.data?.error || "Xatolik yuz berdi");
           }
         }}
         className="mt-3 w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5"
-        style={{
-          background: "linear-gradient(90deg,#7C5CFC,#22E5C8)",
-          color: "#0A0D14",
-        }}
+        style={{ background: "linear-gradient(90deg,#7C5CFC,#22E5C8)", color: "#0A0D14" }}
       >
         <Plus size={14} /> Skin qo‘shish
       </button>
@@ -1151,8 +1358,7 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
   });
   const set = (key) => (val) => setF((prev) => ({ ...prev, [key]: val }));
   const sum = ["common", "rare", "epic", "legend", "myth"].reduce(
-    (a, r) => a + (parseFloat(f[r]) || 0),
-    0,
+    (a, r) => a + (parseFloat(f[r]) || 0), 0
   );
 
   return (
@@ -1167,17 +1373,10 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
         <NumField label="Nomi" value={f.name} onChange={set("name")} />
         <NumField label="Narxi ($)" value={f.price} onChange={set("price")} />
       </div>
-      <NumField
-        label="Rasm URL (ixtiyoriy)"
-        value={f.image}
-        onChange={set("image")}
-      />
+      <NumField label="Rasm URL (ixtiyoriy)" value={f.image} onChange={set("image")} />
       <div className="mt-2.5">
         <div className="flex items-center justify-between mb-1.5">
-          <span
-            className="text-[10px] font-semibold"
-            style={{ color: "#7C8399" }}
-          >
+          <span className="text-[10px] font-semibold" style={{ color: "#7C8399" }}>
             Ehtimollar (%)
           </span>
           <span
@@ -1190,21 +1389,14 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
         <div className="grid grid-cols-5 gap-1.5">
           {RARITY_ORDER.map((r) => (
             <label key={r} className="flex flex-col gap-1 items-center">
-              <span
-                className="text-[8px] font-semibold"
-                style={{ color: RARITY[r].color }}
-              >
+              <span className="text-[8px] font-semibold" style={{ color: RARITY[r].color }}>
                 {RARITY[r].label}
               </span>
               <input
                 value={f[r]}
                 onChange={(e) => set(r)(e.target.value)}
                 className="w-full text-center rounded-lg px-1 py-1.5 text-[10px] font-bold outline-none"
-                style={{
-                  background: "#0A0D14",
-                  border: `1px solid ${RARITY[r].color}44`,
-                  color: "#EDEFF6",
-                }}
+                style={{ background: "#0A0D14", border: `1px solid ${RARITY[r].color}44`, color: "#EDEFF6" }}
               />
             </label>
           ))}
@@ -1229,25 +1421,15 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
             });
             onAdd(norm(res.data));
             setF({
-              name: "",
-              price: "5",
-              color: "#7C5CFC",
-              image: "",
-              common: "50",
-              rare: "30",
-              epic: "14",
-              legend: "5",
-              myth: "1",
+              name: "", price: "5", color: "#7C5CFC", image: "",
+              common: "50", rare: "30", epic: "14", legend: "5", myth: "1",
             });
           } catch (err) {
             alert(err.response?.data?.error || "Xatolik yuz berdi");
           }
         }}
         className="mt-3 w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5"
-        style={{
-          background: "linear-gradient(90deg,#7C5CFC,#22E5C8)",
-          color: "#0A0D14",
-        }}
+        style={{ background: "linear-gradient(90deg,#7C5CFC,#22E5C8)", color: "#0A0D14" }}
       >
         <Plus size={14} /> Case qo‘shish
       </button>
@@ -1255,22 +1437,12 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
   );
 }
 
-function AdminScreen({
-  cases,
-  skins,
-  onAddCase,
-  onAddSkin,
-  onDeleteCase,
-  onDeleteSkin,
-  onClose,
-  token,
-}) {
+function AdminScreen({ cases, skins, onAddCase, onAddSkin, onDeleteCase, onDeleteSkin, onClose, token }) {
   const adminClient = useMemo(() => createAdminClient(token), [token]);
   const [tab, setTab] = useState("cases");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Kirish animatsiyasi uchun — bir kadr keyin true bo'ladi
     const t = requestAnimationFrame(() => setMounted(true));
     return () => cancelAnimationFrame(t);
   }, []);
@@ -1289,9 +1461,7 @@ function AdminScreen({
         style={{
           background: "#05060A",
           border: "1px solid #1B2030",
-          transform: mounted
-            ? "translateY(0) scale(1)"
-            : "translateY(16px) scale(0.98)",
+          transform: mounted ? "translateY(0) scale(1)" : "translateY(16px) scale(0.98)",
           transition: "transform .28s cubic-bezier(0.16,1,0.3,1)",
         }}
       >
@@ -1460,6 +1630,9 @@ export default function App() {
   const [balance, setBalance] = useState(0);
   const [inventory, setInventory] = useState([]);
   const [openCase, setOpenCase] = useState(null);
+  const [viewingCase, setViewingCase] = useState(null); // Case detail sahifasi
+  const [bulkResults, setBulkResults] = useState(null);
+  const [bulkSelling, setBulkSelling] = useState(false);
   const [dailyAvailable, setDailyAvailable] = useState(false);
   const [txs, setTxs] = useState([]);
   const [user, setUser] = useState({
@@ -1473,7 +1646,7 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
 
   // Har bir so'rov ALOHIDA try/catch bilan — bittasi xato bersa ham
-  // qolganlari ishlashda davom etadi. Xato konsolda ko'rinadi.
+  // qolganlari ishlashda davom etadi.
   useEffect(() => {
     (async () => {
       try {
@@ -1540,7 +1713,7 @@ export default function App() {
         console.error("MARKET XATOSI:", err.response?.data || err.message);
       }
 
-      // Agar link orqali referral kodi bilan kirgan bo'lsa — avtomatik bog'laymiz
+      // Referral link orqali kirgan bo'lsa (?ref=CODE) — avtomatik bog'lash
       try {
         const params = new URLSearchParams(window.location.search);
         const refCode = params.get("ref");
@@ -1548,10 +1721,9 @@ export default function App() {
           await client.post("/referral/bind", { refCode });
         }
       } catch (err) {
-        // Allaqachon bog'langan yoki o'z-o'ziga referral bo'lsa backend 400 qaytaradi — bu normal, e'tibor bermaymiz
         console.log(
-          "Referral bind:",
-          err.response?.data?.error || "o'tkazib yuborildi",
+          "Referral bind o'tkazib yuborildi:",
+          err.response?.data?.error || err.message,
         );
       }
 
@@ -1574,6 +1746,54 @@ export default function App() {
     } else {
       setInventory((inv) => [{ ...won, _invId: won.invId }, ...inv]);
     }
+  };
+
+  // Ko'p dona bir yo'la ochish
+  const handleBulkOpen = async (cs, qty) => {
+    try {
+      const results = [];
+      let lastBalance = balance;
+      for (let i = 0; i < qty; i++) {
+        const res = await client.post(`/cases/${cs.id}/open`);
+        const skin = norm(res.data.skin);
+        const invId = res.data.inventoryItem._id;
+        results.push({ skin, invId });
+        lastBalance = res.data.balance;
+      }
+      setBalance(lastBalance);
+      addTx(`Case ochish x${qty} (${cs.name})`, -(cs.price * qty));
+      setInventory((inv) => [
+        ...results.map((r) => ({ ...r.skin, _invId: r.invId })),
+        ...inv,
+      ]);
+      setBulkResults(results);
+    } catch (err) {
+      alert(err.response?.data?.error || "Xatolik");
+    }
+  };
+
+  const handleSellAllBulk = async () => {
+    if (!bulkResults) return;
+    setBulkSelling(true);
+    let newBalance = balance;
+    const soldIds = [];
+    for (const r of bulkResults) {
+      try {
+        const res = await client.post(`/inventory/${r.invId}/sell`);
+        newBalance = res.data.balance;
+        soldIds.push(r.invId);
+      } catch (err) {
+        // ayrim item sotib bo'lmasa ham davom etamiz
+      }
+    }
+    setBalance(newBalance);
+    setInventory((inv) => inv.filter((item) => !soldIds.includes(item._invId)));
+    const totalSold = bulkResults
+      .filter((r) => soldIds.includes(r.invId))
+      .reduce((a, r) => a + r.skin.price * 0.9, 0);
+    if (totalSold > 0) addTx(`Ko'p sotish (${soldIds.length} ta)`, totalSold);
+    setBulkSelling(false);
+    setBulkResults(null);
   };
 
   const handleDaily = async () => {
@@ -1616,19 +1836,16 @@ export default function App() {
   };
 
   const handleDeposit = async (amount) => {
-  if (!amount) return;
-  try {
-    const res = await client.post("/balance/deposit", { amount });
-    setBalance(res.data.balance);
-    addTx("Deposit", amount);
-  } catch (err) {
-    alert(err.response?.data?.error || "Xatolik");
-  }
-};
+    if (!amount) return;
+    try {
+      const res = await client.post("/balance/deposit", { amount });
+      setBalance(res.data.balance);
+      addTx("Deposit", amount);
+    } catch (err) {
+      alert(err.response?.data?.error || "Xatolik");
+    }
+  };
 
-  // Admin tugmasi bosilganda: parol so'raladi, DARHOL backendga
-  // tekshirtiriladi (GET /admin/verify) — noto'g'ri bo'lsa panel
-  // ochilmaydi va xato xabari chiqadi.
   const handleAdminClick = async () => {
     const token = window.prompt("Admin parolini kiriting:");
     if (!token) return;
@@ -1646,6 +1863,11 @@ export default function App() {
     } finally {
       setAdminChecking(false);
     }
+  };
+
+  const goTab = (id) => {
+    setViewingCase(null);
+    setTab(id);
   };
 
   if (!loaded) {
@@ -1682,47 +1904,60 @@ export default function App() {
         }}
       >
         <div className="h-full overflow-y-auto">
-          {tab === "home" && (
-            <HomeScreen
-              balance={balance}
-              user={user}
-              cases={cases}
+          {viewingCase ? (
+            <CaseDetailScreen
+              cs={viewingCase}
               skins={skins}
-              onOpenCase={setOpenCase}
-              dailyAvailable={dailyAvailable}
-              onDaily={handleDaily}
-              nav={setTab}
-              onAdmin={handleAdminClick}
-            />
-          )}
-          {tab === "cases" && (
-            <CasesScreen cases={cases} onOpenCase={setOpenCase} />
-          )}
-          {tab === "inventory" && (
-            <InventoryScreen inventory={inventory} onSell={handleSell} />
-          )}
-          {tab === "market" && (
-            <MarketplaceScreen
-              listings={listings}
               balance={balance}
-              onBuy={handleBuy}
+              onBack={() => setViewingCase(null)}
+              onOpenSingle={(cs) => setOpenCase(cs)}
+              onOpenBulk={handleBulkOpen}
             />
-          )}
-          {tab === "balance" && (
-            <BalanceScreen
-              balance={balance}
-              txs={txs}
-              onDeposit={handleDeposit}
-            />
-          )}
-          {tab === "profile" && (
-            <ProfileScreen
-              user={user}
-              balance={balance}
-              inventory={inventory}
-              refCode={user.referralCode}
-              refStats={refStats}
-            />
+          ) : (
+            <>
+              {tab === "home" && (
+                <HomeScreen
+                  balance={balance}
+                  user={user}
+                  cases={cases}
+                  skins={skins}
+                  onOpenCase={setViewingCase}
+                  dailyAvailable={dailyAvailable}
+                  onDaily={handleDaily}
+                  nav={goTab}
+                  onAdmin={handleAdminClick}
+                />
+              )}
+              {tab === "cases" && (
+                <CasesScreen cases={cases} onOpenCase={setViewingCase} />
+              )}
+              {tab === "inventory" && (
+                <InventoryScreen inventory={inventory} onSell={handleSell} />
+              )}
+              {tab === "market" && (
+                <MarketplaceScreen
+                  listings={listings}
+                  balance={balance}
+                  onBuy={handleBuy}
+                />
+              )}
+              {tab === "balance" && (
+                <BalanceScreen
+                  balance={balance}
+                  txs={txs}
+                  onDeposit={handleDeposit}
+                />
+              )}
+              {tab === "profile" && (
+                <ProfileScreen
+                  user={user}
+                  balance={balance}
+                  inventory={inventory}
+                  refCode={user.referralCode}
+                  refStats={refStats}
+                />
+              )}
+            </>
           )}
         </div>
 
@@ -1738,11 +1973,11 @@ export default function App() {
           >
             {NAV.map((n) => {
               const Icon = n.icon;
-              const active = tab === n.id;
+              const active = tab === n.id && !viewingCase;
               return (
                 <button
                   key={n.id}
-                  onClick={() => setTab(n.id)}
+                  onClick={() => goTab(n.id)}
                   className="flex flex-col items-center gap-0.5 px-2 py-1 relative"
                 >
                   {active && (
@@ -1775,11 +2010,7 @@ export default function App() {
           >
             <div
               className="px-4 py-3 rounded-xl text-xs font-semibold"
-              style={{
-                background: "#12151F",
-                color: "#7C8399",
-                border: "1px solid #232838",
-              }}
+              style={{ background: "#12151F", color: "#7C8399", border: "1px solid #232838" }}
             >
               Tekshirilmoqda...
             </div>
@@ -1796,6 +2027,16 @@ export default function App() {
             onResolve={handleResolve}
           />
         )}
+
+        {bulkResults && (
+          <BulkResultModal
+            results={bulkResults}
+            onClose={() => setBulkResults(null)}
+            onSellAll={handleSellAllBulk}
+            selling={bulkSelling}
+          />
+        )}
+
         {showAdmin && (
           <AdminScreen
             cases={cases}
