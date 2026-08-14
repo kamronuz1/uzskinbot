@@ -31,9 +31,6 @@ import {
 
 /* ---------------------------------------------------------------
    TOKENS
-   Har bir rarity uchun `bg` — kartaning BUTUN ICHINI to'ldiradigan
-   gradient (faqat chegara emas), shu orqali mif/legend darhol
-   ko'zga tashlanadi.
 ----------------------------------------------------------------*/
 const RARITY = {
   common: {
@@ -87,11 +84,6 @@ const fmt = (n) =>
 const uid = () => Math.random().toString(36).slice(2, 9);
 const norm = (o) => (o ? { ...o, id: o._id || o.id } : o);
 
-/* Thumb: rasm bo'lsa ko'rsatadi. `plain` true bo'lsa hech qanday
-   fon chizmaydi (fon vazifasini o'rab turgan konteyner bajaradi —
-   SkinCard va reel/won ko'rinishlarida shunday ishlatiladi).
-   `plain` false bo'lsa (case ikonkalari kabi joylarda) o'zining
-   radial fon-porlashini chizadi — eski xatti-harakat saqlanadi. */
 function Thumb({ image, color, glow, Icon, size = 32, plain = false }) {
   const style = image
     ? {
@@ -151,8 +143,6 @@ function ScreenHeader({ title, sub, right }) {
   );
 }
 
-/* SkinCard — endi karta ICHI to'liq rarity rangiga to'yingan.
-   Chegara juda yupqa, urg'u fonda. */
 function SkinCard({ skin, onClick, badge, size = "md" }) {
   const R = RARITY[skin.rarity];
   const Icon = iconFor(skin.id);
@@ -197,348 +187,108 @@ function SkinCard({ skin, onClick, badge, size = "md" }) {
 }
 
 /* ---------------------------------------------------------------
-   CASE OPENING — bitta OYNADA, istalgan miqdorni (1 yoki ko'p)
-   ketma-ket, HAR BIRINI o'z animatsiyasi va Sotish/Inventarga
-   tanlovi bilan ochadi.
+   MINI REEL — bitta donaning aylanib-tushish animatsiyasi.
+   Bir nechtasi bir vaqtda, yonma-yon ishga tushirilishi mumkin.
 ----------------------------------------------------------------*/
-const ITEM_W = 108;
-
-function RarityBurst({ color, big }) {
-  return (
-    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-      <div
-        className="rounded-full animate-[ring1_.9s_ease-out_forwards]"
-        style={{ width: 40, height: 40, border: `2px solid ${color}` }}
-      />
-      {big && (
-        <div
-          className="rounded-full animate-[ring2_1.1s_ease-out_forwards] absolute"
-          style={{ width: 40, height: 40, border: `2px solid ${color}` }}
-        />
-      )}
-    </div>
-  );
-}
-
-function CaseOpenModal({ cs, qty = 1, skins, balance, onClose, onOpened, onResolve }) {
-  const [phase, setPhase] = useState("idle"); // idle | loading | spinning | result
-  const [reel, setReel] = useState([]);
-  const [offset, setOffset] = useState(0);
-  const [won, setWon] = useState(null); // { ...skin, invId }
-  const [flash, setFlash] = useState(false);
-  const [errMsg, setErrMsg] = useState("");
-  const [round, setRound] = useState(1); // nechinchi dona ochilmoqda
-  const [remaining, setRemaining] = useState(qty);
+function MiniReel({ skins, winner, height, itemWidth, onDone }) {
   const containerRef = useRef(null);
-  const resolvedRef = useRef(true);
-  const canAfford = balance >= cs.price;
-  const CaseIcon = iconFor(cs.id);
+  const [items, setItems] = useState([]);
+  const [offset, setOffset] = useState(0);
+  const [started, setStarted] = useState(false);
+  const DURATION = 3.5;
 
-  const start = async () => {
-    if (!canAfford || phase !== "idle") return;
-    setErrMsg("");
-    setPhase("loading");
-    resolvedRef.current = false;
-    try {
-      const res = await client.post(`/cases/${cs.id}/open`);
-      const winner = norm(res.data.skin);
-      const invId = res.data.inventoryItem._id;
-      onOpened(res.data.balance, cs.price, cs.name);
-
-      const reelArr = Array.from(
-        { length: 44 },
-        () => norm(skins[Math.floor(Math.random() * skins.length)]) || winner,
-      );
-      const winIndex = 38;
-      reelArr[winIndex] = winner;
-      setReel(reelArr);
-      setWon({ ...winner, invId });
-      setOffset(0);
-      setPhase("spinning");
-      requestAnimationFrame(() => {
-        const w =
-          (containerRef.current && containerRef.current.offsetWidth) || 320;
-        const jitter = Math.random() * ITEM_W * 0.55 - ITEM_W * 0.27;
-        const target = -(winIndex * ITEM_W + ITEM_W / 2 - w / 2) + jitter;
-        requestAnimationFrame(() => setOffset(target));
+  useEffect(() => {
+    const arr = Array.from(
+      { length: 26 },
+      () => skins[Math.floor(Math.random() * skins.length)] || winner,
+    );
+    const winIndex = 20;
+    arr[winIndex] = winner;
+    setItems(arr);
+    const raf1 = requestAnimationFrame(() => {
+      const w = (containerRef.current && containerRef.current.offsetWidth) || itemWidth * 3;
+      const jitter = Math.random() * itemWidth * 0.5 - itemWidth * 0.25;
+      const target = -(winIndex * itemWidth + itemWidth / 2 - w / 2) + jitter;
+      const raf2 = requestAnimationFrame(() => {
+        setOffset(target);
+        setStarted(true);
       });
-      setTimeout(() => {
-        setPhase("result");
-        setFlash(true);
-        setTimeout(() => setFlash(false), 450);
-      }, 5000);
-    } catch (err) {
-      setErrMsg(err.response?.data?.error || "Xatolik yuz berdi");
-      setPhase("idle");
-      resolvedRef.current = true;
-    }
-  };
-
-  const R = won ? RARITY[won.rarity] : null;
-  const isBig = won && (won.rarity === "legend" || won.rarity === "myth");
-
-  const finish = async (action) => {
-    if (action === "sell") {
-      try {
-        const res = await client.post(`/inventory/${won.invId}/sell`);
-        onResolve(won, "sell", res.data.balance);
-      } catch (err) {
-        setErrMsg(err.response?.data?.error || "Xatolik");
-        return;
-      }
-    } else {
-      onResolve(won, "keep", balance);
-    }
-    resolvedRef.current = true;
-    setWon(null);
-    setPhase("idle");
-    setReel([]);
-    setOffset(0);
-
-    const left = remaining - 1;
-    setRemaining(left);
-    if (left > 0) {
-      setRound((r) => r + 1);
-      // Keyingi donani avtomatik ochamiz — foydalanuvchi qayta bosishi shart emas
-      setTimeout(() => start(), 200);
-    }
-  };
-
-  // X bosilganda: chiqqan-u hali tanlanmagan natija bo'lsa, avtomatik
-  // Inventarga qo'shiladi. Ochilmagan qolgan donalar hech qachon
-  // to'lanmagan, shuning uchun ular uchun hech narsa qilinmaydi.
-  const handleClose = () => {
-    if (won && !resolvedRef.current) {
-      resolvedRef.current = true;
-      onResolve(won, "keep", balance);
-    }
-    onClose();
-  };
+      return () => cancelAnimationFrame(raf2);
+    });
+    const t = setTimeout(() => onDone && onDone(), DURATION * 1000 + 150);
+    return () => {
+      cancelAnimationFrame(raf1);
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      style={{ background: "rgba(5,6,10,.78)", backdropFilter: "blur(6px)" }}
+      ref={containerRef}
+      className="relative rounded-xl overflow-hidden"
+      style={{ height, background: "#0A0D14", border: "1px solid #1B2030" }}
     >
-      {flash && R && (
-        <div
-          className="fixed inset-0 pointer-events-none animate-[flashOut_.45s_ease-out_forwards]"
-          style={{ background: R.color }}
-        />
-      )}
       <div
-        className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden"
-        style={{ background: "#12151F", border: "1px solid #232838" }}
+        className="absolute left-1/2 top-0 bottom-0 w-[2px] z-10"
+        style={{ background: "#7C5CFC", boxShadow: "0 0 10px #7C5CFC" }}
+      />
+      <div
+        className="absolute inset-0 z-[5]"
+        style={{
+          background:
+            "linear-gradient(90deg,#0A0D14 0%, transparent 18%, transparent 82%, #0A0D14 100%)",
+        }}
+      />
+      <div
+        className="flex h-full items-center absolute left-0 top-0"
+        style={{
+          transform: `translateX(${offset}px)`,
+          transition: started ? `transform ${DURATION}s cubic-bezier(0.09,0.82,0.12,1)` : "none",
+        }}
       >
-        <div
-          className="flex items-center justify-between px-4 py-3.5"
-          style={{ borderBottom: "1px solid #1B2030" }}
-        >
-          <div className="flex items-center gap-2">
+        {items.map((s, i) => {
+          const R = RARITY[s.rarity];
+          const Icon = iconFor(s.id + i);
+          const inner = Math.max(18, itemWidth * 0.3);
+          return (
             <div
-              className="w-7 h-7 rounded-lg overflow-hidden"
-              style={{ background: `${cs.color}22` }}
-            >
-              <Thumb
-                image={cs.image}
-                color={cs.color}
-                glow={`${cs.color}55`}
-                Icon={CaseIcon}
-                size={14}
-              />
-            </div>
-            <span
-              className="text-sm font-semibold"
-              style={{ color: "#EDEFF6" }}
-            >
-              {cs.name}
-            </span>
-            {qty > 1 && (
-              <span
-                className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                style={{ background: "#1B2030", color: "#7C8399" }}
-              >
-                {round} / {qty}
-              </span>
-            )}
-          </div>
-          <button
-            onClick={phase === "loading" ? undefined : handleClose}
-            disabled={phase === "loading"}
-            className="w-7 h-7 rounded-full flex items-center justify-center"
-            style={{
-              background: "#1B2030",
-              opacity: phase === "loading" ? 0.4 : 1,
-            }}
-          >
-            <X size={14} color="#7C8399" />
-          </button>
-        </div>
-
-        <div className="p-4">
-          {errMsg && (
-            <div
-              className="mb-3 text-xs font-semibold text-center"
-              style={{ color: "#FF3B6E" }}
-            >
-              {errMsg}
-            </div>
-          )}
-
-          {(phase === "loading" ||
-            phase === "spinning" ||
-            phase === "idle") && (
-            <div
-              ref={containerRef}
-              className="relative rounded-2xl overflow-hidden"
-              style={{
-                height: 108,
-                background: "#0A0D14",
-                border: "1px solid #1B2030",
-              }}
+              key={i}
+              className="flex-shrink-0 flex items-center justify-center"
+              style={{ width: itemWidth, height }}
             >
               <div
-                className="absolute left-1/2 top-0 bottom-0 w-[2px] z-10"
-                style={{ background: "#7C5CFC", boxShadow: "0 0 14px #7C5CFC" }}
-              />
-              <div
-                className="absolute inset-0 z-[5]"
+                className="rounded-lg overflow-hidden"
                 style={{
-                  background:
-                    "linear-gradient(90deg,#0A0D14 0%, transparent 16%, transparent 84%, #0A0D14 100%)",
-                }}
-              />
-              <div
-                className="flex h-full items-center absolute left-0 top-0"
-                style={{
-                  transform: `translateX(${offset}px)`,
-                  transition:
-                    phase === "spinning"
-                      ? "transform 4.9s cubic-bezier(0.09,0.82,0.12,1)"
-                      : "none",
+                  width: itemWidth - 14,
+                  height: height - 14,
+                  background: R.bg,
+                  border: `1px solid ${R.color}55`,
                 }}
               >
-                {reel.map((s, i) => {
-                  const Rr = RARITY[s.rarity];
-                  const Icon = iconFor(s.id + i);
-                  return (
-                    <div
-                      key={i}
-                      className="flex-shrink-0 flex items-center justify-center"
-                      style={{ width: ITEM_W, height: 96 }}
-                    >
-                      <div
-                        className="w-[92px] h-[88px] rounded-xl overflow-hidden"
-                        style={{ background: Rr.bg, border: `1px solid ${Rr.color}55` }}
-                      >
-                        <Thumb
-                          image={s.image}
-                          color={Rr.color}
-                          glow={Rr.glow}
-                          Icon={Icon}
-                          size={26}
-                          plain
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+                <Thumb image={s.image} color={R.color} glow={R.glow} Icon={Icon} size={inner} plain />
               </div>
             </div>
-          )}
-
-          {phase === "result" && won && (
-            <div className="flex flex-col items-center py-2">
-              <div
-                className="relative w-32 h-32 rounded-2xl overflow-hidden flex items-center justify-center mb-3 animate-[dropIn_.5s_ease-out]"
-                style={{ background: R.bg, border: `1px solid ${R.color}66` }}
-              >
-                <Thumb
-                  image={won.image}
-                  color={R.color}
-                  glow={R.glow}
-                  Icon={iconFor(won.id)}
-                  size={54}
-                  plain
-                />
-                {isBig && (
-                  <RarityBurst color={R.color} big={won.rarity === "myth"} />
-                )}
-              </div>
-              <div className="text-base font-bold" style={{ color: "#EDEFF6" }}>
-                {won.name}
-              </div>
-              <div className="flex items-center gap-2 mt-1.5">
-                <Pill color={R.color}>{R.label}</Pill>
-                <span
-                  className="text-xs font-semibold"
-                  style={{ color: "#7C8399" }}
-                >
-                  ${fmt(won.price)}
-                </span>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-4">
-            {phase === "idle" && (
-              <button
-                onClick={start}
-                disabled={!canAfford}
-                className="w-full py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2"
-                style={{
-                  background: canAfford
-                    ? "linear-gradient(90deg,#7C5CFC,#22E5C8)"
-                    : "#1B2030",
-                  color: canAfford ? "#0A0D14" : "#7C8399",
-                }}
-              >
-                {canAfford
-                  ? `Ochish — $${fmt(cs.price)}`
-                  : "Balans yetarli emas"}
-              </button>
-            )}
-            {(phase === "loading" || phase === "spinning") && (
-              <div
-                className="w-full py-3.5 rounded-2xl text-center text-sm font-semibold"
-                style={{ background: "#171B27", color: "#7C8399" }}
-              >
-                {phase === "loading" ? "Yuklanmoqda..." : "Ochilmoqda..."}
-              </div>
-            )}
-            {phase === "result" && (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => finish("sell")}
-                  className="flex-1 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5"
-                  style={{
-                    background: "linear-gradient(90deg,#22E5C8,#4EA1FF)",
-                    color: "#0A0D14",
-                  }}
-                >
-                  <Tag size={14} /> Sotish — ${fmt(won.price * 0.9)}
-                </button>
-                <button
-                  onClick={() => finish("keep")}
-                  className="flex-1 py-3 rounded-2xl text-sm font-semibold"
-                  style={{ background: "#1B2030", color: "#EDEFF6" }}
-                >
-                  Inventarga
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
 /* ---------------------------------------------------------------
-   CASE DETAIL SCREEN
+   CASE DETAIL SCREEN — ochish endi shu yerning o'zida, modalsiz
 ----------------------------------------------------------------*/
-function CaseDetailScreen({ cs, skins, balance, onBack, onOpen }) {
+function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx, onAddToInventory }) {
   const [qty, setQty] = useState(1);
+  const [phase, setPhase] = useState("idle"); // idle | fetching | spinning | result
+  const [winners, setWinners] = useState([]); // [{skin, invId}]
+  const [busyQty, setBusyQty] = useState(1);
+  const [doneCount, setDoneCount] = useState(0);
+  const [errMsg, setErrMsg] = useState("");
+  const [flashColor, setFlashColor] = useState(null);
+  const [selling, setSelling] = useState(false);
+
   const Icon = iconFor(cs.id);
   const eligible = skins
     .filter((s) => (cs.odds?.[s.rarity] || 0) > 0)
@@ -549,6 +299,84 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onOpen }) {
     );
   const totalPrice = cs.price * qty;
   const canAfford = balance >= totalPrice;
+
+  useEffect(() => {
+    if (phase === "spinning" && busyQty > 0 && doneCount >= busyQty) {
+      setPhase("result");
+      const best = winners.reduce(
+        (b, w) =>
+          RARITY_ORDER.indexOf(w.skin.rarity) > RARITY_ORDER.indexOf(b)
+            ? w.skin.rarity
+            : b,
+        "common",
+      );
+      if (best === "legend" || best === "myth") {
+        setFlashColor(RARITY[best].color);
+        setTimeout(() => setFlashColor(null), 500);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doneCount, phase]);
+
+  const handleOpenClick = async () => {
+    if (!canAfford || phase !== "idle") return;
+    setErrMsg("");
+    setPhase("fetching");
+    setBusyQty(qty);
+    try {
+      const results = [];
+      let lastBalance = balance;
+      for (let i = 0; i < qty; i++) {
+        const res = await client.post(`/cases/${cs.id}/open`);
+        results.push({ skin: norm(res.data.skin), invId: res.data.inventoryItem._id });
+        lastBalance = res.data.balance;
+      }
+      onBalanceChange(lastBalance);
+      onAddTx(qty > 1 ? `Case ochish x${qty} (${cs.name})` : `Case ochish (${cs.name})`, -totalPrice);
+      setWinners(results);
+      setDoneCount(0);
+      setPhase("spinning");
+    } catch (err) {
+      setErrMsg(err.response?.data?.error || "Xatolik yuz berdi");
+      setPhase("idle");
+    }
+  };
+
+  const reset = () => {
+    setPhase("idle");
+    setWinners([]);
+    setDoneCount(0);
+  };
+
+  const handleKeepAll = () => {
+    onAddToInventory(winners);
+    reset();
+  };
+
+  const handleSellAll = async () => {
+    setSelling(true);
+    let bal = balance;
+    let total = 0;
+    for (const w of winners) {
+      try {
+        const res = await client.post(`/inventory/${w.invId}/sell`);
+        bal = res.data.balance;
+        total += w.skin.price * 0.9;
+      } catch (err) {
+        // birortasi sotilmasa ham davom etamiz
+      }
+    }
+    onBalanceChange(bal);
+    if (total > 0) {
+      onAddTx(winners.length > 1 ? `Sotildi (${winners.length} ta)` : `Sotildi: ${winners[0]?.skin.name}`, total);
+    }
+    setSelling(false);
+    reset();
+  };
+
+  const cols = busyQty === 1 ? 1 : busyQty <= 4 ? 2 : 3;
+  const reelH = busyQty === 1 ? 112 : busyQty <= 4 ? 88 : 70;
+  const reelW = busyQty === 1 ? 108 : busyQty <= 4 ? 84 : 66;
 
   return (
     <div className="pb-24">
@@ -576,6 +404,13 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onOpen }) {
             background: `radial-gradient(120% 90% at 50% 0%, ${cs.color}55 0%, transparent 55%), linear-gradient(180deg, #171B27 0%, #0A0D14 55%, #05060A 100%)`,
           }}
         />
+        {flashColor && (
+          <div
+            className="absolute inset-0 pointer-events-none animate-[flashOut_.5s_ease-out_forwards]"
+            style={{ background: flashColor }}
+          />
+        )}
+
         <div className="relative flex flex-col items-center pt-8 pb-6 px-4">
           <div
             className="w-24 h-24 rounded-3xl flex items-center justify-center mb-4"
@@ -591,10 +426,7 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onOpen }) {
               style={{ filter: `drop-shadow(0 0 14px ${cs.color}88)` }}
             />
           </div>
-          <div
-            className="text-lg font-extrabold mb-1"
-            style={{ color: "#EDEFF6" }}
-          >
+          <div className="text-lg font-extrabold mb-1" style={{ color: "#EDEFF6" }}>
             {cs.name}
           </div>
           <div className="flex items-center gap-1.5 mb-5">
@@ -604,50 +436,144 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onOpen }) {
             </span>
           </div>
 
-          <div className="flex items-center gap-3 mb-4">
-            <button
-              onClick={() => setQty((q) => Math.max(1, q - 1))}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-base font-bold"
-              style={{
-                background: "#171B27",
-                color: "#EDEFF6",
-                border: "1px solid #232838",
-              }}
+          {errMsg && (
+            <div
+              className="w-full mb-3 text-xs font-semibold text-center"
+              style={{ color: "#FF3B6E" }}
             >
-              −
-            </button>
-            <span
-              className="text-sm font-bold w-6 text-center"
-              style={{ color: "#EDEFF6" }}
-            >
-              {qty}
-            </span>
-            <button
-              onClick={() => setQty((q) => Math.min(10, q + 1))}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-base font-bold"
-              style={{
-                background: "#171B27",
-                color: "#EDEFF6",
-                border: "1px solid #232838",
-              }}
-            >
-              +
-            </button>
-          </div>
+              {errMsg}
+            </div>
+          )}
 
-          <button
-            onClick={() => onOpen(cs, qty)}
-            disabled={!canAfford}
-            className="w-full py-3.5 rounded-2xl font-bold text-sm"
-            style={{
-              background: canAfford
-                ? "linear-gradient(90deg,#7C5CFC,#22E5C8)"
-                : "#1B2030",
-              color: canAfford ? "#0A0D14" : "#7C8399",
-            }}
-          >
-            {canAfford ? `Ochish — $${fmt(totalPrice)}` : "Balans yetarli emas"}
-          </button>
+          {phase === "idle" && (
+            <>
+              <div className="flex items-center gap-3 mb-4">
+                <button
+                  onClick={() => setQty((q) => Math.max(1, q - 1))}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-base font-bold"
+                  style={{ background: "#171B27", color: "#EDEFF6", border: "1px solid #232838" }}
+                >
+                  −
+                </button>
+                <span className="text-sm font-bold w-6 text-center" style={{ color: "#EDEFF6" }}>
+                  {qty}
+                </span>
+                <button
+                  onClick={() => setQty((q) => Math.min(10, q + 1))}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-base font-bold"
+                  style={{ background: "#171B27", color: "#EDEFF6", border: "1px solid #232838" }}
+                >
+                  +
+                </button>
+              </div>
+              <button
+                onClick={handleOpenClick}
+                disabled={!canAfford}
+                className="w-full py-3.5 rounded-2xl font-bold text-sm"
+                style={{
+                  background: canAfford
+                    ? "linear-gradient(90deg,#7C5CFC,#22E5C8)"
+                    : "#1B2030",
+                  color: canAfford ? "#0A0D14" : "#7C8399",
+                }}
+              >
+                {canAfford ? `Ochish — $${fmt(totalPrice)}` : "Balans yetarli emas"}
+              </button>
+            </>
+          )}
+
+          {phase === "fetching" && (
+            <div className="w-full py-3.5 rounded-2xl text-center text-sm font-semibold" style={{ background: "#171B27", color: "#7C8399" }}>
+              Yuklanmoqda...
+            </div>
+          )}
+
+          {phase === "spinning" && (
+            <div className="w-full grid gap-2" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))` }}>
+              {winners.map((w, i) => (
+                <MiniReel
+                  key={i}
+                  skins={skins}
+                  winner={w.skin}
+                  height={reelH}
+                  itemWidth={reelW}
+                  onDone={() => setDoneCount((c) => c + 1)}
+                />
+              ))}
+            </div>
+          )}
+
+          {phase === "result" && (
+            <div className="w-full">
+              <div
+                className="grid gap-2 mb-3"
+                style={{ gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))` }}
+              >
+                {winners.map((w, i) => {
+                  const R = RARITY[w.skin.rarity];
+                  const Ic = iconFor(w.skin.id);
+                  return (
+                    <div
+                      key={i}
+                      className="relative rounded-xl overflow-hidden animate-[dropIn_.4s_ease-out]"
+                      style={{
+                        height: busyQty === 1 ? 128 : 96,
+                        background: R.bg,
+                        border: `1px solid ${R.color}77`,
+                      }}
+                    >
+                      <Thumb
+                        image={w.skin.image}
+                        color={R.color}
+                        glow={R.glow}
+                        Icon={Ic}
+                        size={busyQty === 1 ? 46 : 28}
+                        plain
+                      />
+                      <div
+                        className="absolute bottom-1 left-1 right-1 text-[9px] font-bold text-center truncate"
+                        style={{ color: "#EDEFF6" }}
+                      >
+                        {w.skin.name}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="text-xs font-semibold text-center mb-3" style={{ color: "#7C8399" }}>
+                Jami qiymat:{" "}
+                <span style={{ color: "#22E5C8" }}>
+                  ${fmt(winners.reduce((a, w) => a + w.skin.price, 0))}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSellAll}
+                  disabled={selling}
+                  className="flex-1 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5"
+                  style={{
+                    background: "linear-gradient(90deg,#22E5C8,#4EA1FF)",
+                    color: "#0A0D14",
+                    opacity: selling ? 0.6 : 1,
+                  }}
+                >
+                  <Tag size={14} />
+                  {selling
+                    ? "Sotilmoqda..."
+                    : busyQty === 1
+                    ? `Sotish — $${fmt((winners[0]?.skin.price || 0) * 0.9)}`
+                    : "Hammasini sotish"}
+                </button>
+                <button
+                  onClick={handleKeepAll}
+                  className="flex-1 py-3 rounded-2xl text-sm font-semibold"
+                  style={{ background: "#1B2030", color: "#EDEFF6" }}
+                >
+                  {busyQty === 1 ? "Inventarga" : "Inventarga saqlash"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1588,7 +1514,6 @@ export default function App() {
   const [skins, setSkins] = useState([]);
   const [balance, setBalance] = useState(0);
   const [inventory, setInventory] = useState([]);
-  const [openCase, setOpenCase] = useState(null); // { cs, qty }
   const [viewingCase, setViewingCase] = useState(null);
   const [dailyAvailable, setDailyAvailable] = useState(false);
   const [txs, setTxs] = useState([]);
@@ -1688,18 +1613,11 @@ export default function App() {
   const addTx = (label, amt) =>
     setTxs((t) => [{ label, amt, time: "hozir" }, ...t].slice(0, 20));
 
-  const handleOpened = (newBalance, price, caseName) => {
-    setBalance(newBalance);
-    addTx(`Case ochish (${caseName})`, -price);
-  };
-
-  const handleResolve = (won, action, newBalance) => {
-    if (action === "sell") {
-      setBalance(newBalance);
-      addTx(`Sotildi: ${won.name}`, won.price * 0.9);
-    } else {
-      setInventory((inv) => [{ ...won, _invId: won.invId }, ...inv]);
-    }
+  const addToInventory = (items) => {
+    setInventory((inv) => [
+      ...items.map((it) => ({ ...it.skin, _invId: it.invId })),
+      ...inv,
+    ]);
   };
 
   const handleDaily = async () => {
@@ -1796,9 +1714,7 @@ export default function App() {
     >
       <style>{`
         @keyframes dropIn { 0% { opacity:0; transform:scale(.6) translateY(10px);} 60% { opacity:1; transform:scale(1.06) translateY(0);} 100% { transform:scale(1); opacity:1; } }
-        @keyframes flashOut { 0% { opacity:.28; } 100% { opacity:0; } }
-        @keyframes ring1 { 0% { transform:scale(1); opacity:.9; } 100% { transform:scale(2.6); opacity:0; } }
-        @keyframes ring2 { 0% { transform:scale(1); opacity:.7; } 100% { transform:scale(3.6); opacity:0; } }
+        @keyframes flashOut { 0% { opacity:.3; } 100% { opacity:0; } }
       `}</style>
       <div
         className="w-full max-w-[380px] h-[720px] relative overflow-hidden"
@@ -1816,7 +1732,9 @@ export default function App() {
               skins={skins}
               balance={balance}
               onBack={() => setViewingCase(null)}
-              onOpen={(cs, qty) => setOpenCase({ cs, qty })}
+              onBalanceChange={setBalance}
+              onAddTx={addTx}
+              onAddToInventory={addToInventory}
             />
           ) : (
             <>
@@ -1920,18 +1838,6 @@ export default function App() {
               Tekshirilmoqda...
             </div>
           </div>
-        )}
-
-        {openCase && (
-          <CaseOpenModal
-            cs={openCase.cs}
-            qty={openCase.qty}
-            skins={skins}
-            balance={balance}
-            onClose={() => setOpenCase(null)}
-            onOpened={handleOpened}
-            onResolve={handleResolve}
-          />
         )}
 
         {showAdmin && (
