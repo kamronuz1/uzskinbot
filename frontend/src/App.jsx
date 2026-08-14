@@ -31,17 +31,41 @@ import {
 
 /* ---------------------------------------------------------------
    TOKENS
+   Har bir rarity uchun `bg` — kartaning BUTUN ICHINI to'ldiradigan
+   gradient (faqat chegara emas), shu orqali mif/legend darhol
+   ko'zga tashlanadi.
 ----------------------------------------------------------------*/
 const RARITY = {
-  common: { label: "Oddiy", color: "#8A93A6", glow: "rgba(138,147,166,.32)" },
-  rare: { label: "Noyob", color: "#4EA1FF", glow: "rgba(78,161,255,.48)" },
-  epic: { label: "Epik", color: "#B24BFF", glow: "rgba(178,75,255,.56)" },
+  common: {
+    label: "Oddiy",
+    color: "#8A93A6",
+    glow: "rgba(138,147,166,.32)",
+    bg: "linear-gradient(165deg, rgba(138,147,166,.30) 0%, rgba(138,147,166,.07) 55%, #12151F 100%)",
+  },
+  rare: {
+    label: "Noyob",
+    color: "#4EA1FF",
+    glow: "rgba(78,161,255,.48)",
+    bg: "linear-gradient(165deg, rgba(78,161,255,.48) 0%, rgba(78,161,255,.10) 55%, #12151F 100%)",
+  },
+  epic: {
+    label: "Epik",
+    color: "#B24BFF",
+    glow: "rgba(178,75,255,.56)",
+    bg: "linear-gradient(165deg, rgba(178,75,255,.58) 0%, rgba(178,75,255,.14) 55%, #12151F 100%)",
+  },
   legend: {
     label: "Afsonaviy",
     color: "#FFB020",
     glow: "rgba(255,176,32,.62)",
+    bg: "linear-gradient(165deg, rgba(255,176,32,.62) 0%, rgba(255,176,32,.16) 55%, #12151F 100%)",
   },
-  myth: { label: "Mif", color: "#FF3B6E", glow: "rgba(255,59,110,.68)" },
+  myth: {
+    label: "Mif",
+    color: "#FF3B6E",
+    glow: "rgba(255,59,110,.68)",
+    bg: "linear-gradient(165deg, rgba(255,59,110,.68) 0%, rgba(255,59,110,.18) 55%, #12151F 100%)",
+  },
 };
 const RARITY_ORDER = ["common", "rare", "epic", "legend", "myth"];
 const ICONS = [Sword, Shield, Zap, Gem, Flame, Star, Crown];
@@ -61,18 +85,22 @@ const fmt = (n) =>
     maximumFractionDigits: 2,
   });
 const uid = () => Math.random().toString(36).slice(2, 9);
-// MongoDB obyektlarida _id bo'ladi, id emas — shu yerda normalizatsiya qilamiz
 const norm = (o) => (o ? { ...o, id: o._id || o.id } : o);
 
-/* Thumb: rasm bo'lsa ko'rsatadi, bo'lmasa rarity rangiga mos, KUCHLI
-   tiniqlikdagi radial fon + porlab turgan ikonka chizadi. */
-function Thumb({ image, color, glow, Icon, size = 32 }) {
+/* Thumb: rasm bo'lsa ko'rsatadi. `plain` true bo'lsa hech qanday
+   fon chizmaydi (fon vazifasini o'rab turgan konteyner bajaradi —
+   SkinCard va reel/won ko'rinishlarida shunday ishlatiladi).
+   `plain` false bo'lsa (case ikonkalari kabi joylarda) o'zining
+   radial fon-porlashini chizadi — eski xatti-harakat saqlanadi. */
+function Thumb({ image, color, glow, Icon, size = 32, plain = false }) {
   const style = image
     ? {
         backgroundImage: `url(${image})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }
+    : plain
+    ? {}
     : {
         background: `radial-gradient(circle at 50% 32%, ${glow} 0%, ${glow} 38%, transparent 82%)`,
       };
@@ -123,37 +151,26 @@ function ScreenHeader({ title, sub, right }) {
   );
 }
 
-/* SkinCard — rarity darajasiga qarab fon/border/glow KUCHAYADI.
-   legend/myth uchun qalinroq porlab turgan chegara, epik uchun
-   o'rtacha, oddiy/noyob uchun yengil. */
+/* SkinCard — endi karta ICHI to'liq rarity rangiga to'yingan.
+   Chegara juda yupqa, urg'u fonda. */
 function SkinCard({ skin, onClick, badge, size = "md" }) {
   const R = RARITY[skin.rarity];
   const Icon = iconFor(skin.id);
   const h = size === "lg" ? "h-36" : size === "sm" ? "h-24" : "h-28";
-  const strong = skin.rarity === "legend" || skin.rarity === "myth";
-  const mid = skin.rarity === "epic";
   return (
     <button
       onClick={onClick}
       className="relative rounded-2xl overflow-hidden text-left w-full transition-transform active:scale-[0.97]"
       style={{
-        background: "linear-gradient(160deg,#171B27,#12151F)",
-        border: `${strong ? 2 : 1}px solid ${R.color}${strong ? "99" : mid ? "55" : "33"}`,
-        boxShadow: strong
-          ? `0 0 22px ${R.glow}`
-          : mid
-          ? `0 0 10px ${R.glow}`
-          : "none",
+        background: "#12151F",
+        border: `1px solid ${R.color}40`,
       }}
     >
-      <div className={`relative ${h}`}>
-        <Thumb image={skin.image} color={R.color} glow={R.glow} Icon={Icon} />
+      <div className={`relative ${h}`} style={{ background: R.bg }}>
+        <Thumb image={skin.image} color={R.color} glow={R.glow} Icon={Icon} plain />
         {badge}
       </div>
-      <div
-        className="px-2.5 pb-2.5 pt-1.5"
-        style={{ background: strong ? `${R.color}14` : "transparent" }}
-      >
+      <div className="px-2.5 pb-2.5 pt-1.5">
         <div
           className="text-[11px] font-medium truncate"
           style={{ color: "#EDEFF6" }}
@@ -175,16 +192,14 @@ function SkinCard({ skin, onClick, badge, size = "md" }) {
           </span>
         </div>
       </div>
-      <div
-        className="absolute top-0 left-0 right-0 h-[3px]"
-        style={{ background: R.color }}
-      />
     </button>
   );
 }
 
 /* ---------------------------------------------------------------
-   CASE OPENING — haqiqiy natijani backenddan oladi
+   CASE OPENING — bitta OYNADA, istalgan miqdorni (1 yoki ko'p)
+   ketma-ket, HAR BIRINI o'z animatsiyasi va Sotish/Inventarga
+   tanlovi bilan ochadi.
 ----------------------------------------------------------------*/
 const ITEM_W = 108;
 
@@ -205,15 +220,17 @@ function RarityBurst({ color, big }) {
   );
 }
 
-function CaseOpenModal({ cs, skins, balance, onClose, onOpened, onResolve }) {
+function CaseOpenModal({ cs, qty = 1, skins, balance, onClose, onOpened, onResolve }) {
   const [phase, setPhase] = useState("idle"); // idle | loading | spinning | result
   const [reel, setReel] = useState([]);
   const [offset, setOffset] = useState(0);
   const [won, setWon] = useState(null); // { ...skin, invId }
   const [flash, setFlash] = useState(false);
   const [errMsg, setErrMsg] = useState("");
+  const [round, setRound] = useState(1); // nechinchi dona ochilmoqda
+  const [remaining, setRemaining] = useState(qty);
   const containerRef = useRef(null);
-  const resolvedRef = useRef(true); // true = joriy natija bo'yicha tanlov qilingan (yoki hali ochilmagan)
+  const resolvedRef = useRef(true);
   const canAfford = balance >= cs.price;
   const CaseIcon = iconFor(cs.id);
 
@@ -260,8 +277,6 @@ function CaseOpenModal({ cs, skins, balance, onClose, onOpened, onResolve }) {
   const R = won ? RARITY[won.rarity] : null;
   const isBig = won && (won.rarity === "legend" || won.rarity === "myth");
 
-  // Sotish/Inventarga tanlanganda MODAL YOPILMAYDI — case o'zida
-  // ochiq qoladi, darhol qayta ochish mumkin.
   const finish = async (action) => {
     if (action === "sell") {
       try {
@@ -279,10 +294,19 @@ function CaseOpenModal({ cs, skins, balance, onClose, onOpened, onResolve }) {
     setPhase("idle");
     setReel([]);
     setOffset(0);
+
+    const left = remaining - 1;
+    setRemaining(left);
+    if (left > 0) {
+      setRound((r) => r + 1);
+      // Keyingi donani avtomatik ochamiz — foydalanuvchi qayta bosishi shart emas
+      setTimeout(() => start(), 200);
+    }
   };
 
-  // X bosilganda: natija chiqqan-u hali tanlov qilinmagan bo'lsa —
-  // avtomatik ravishda Inventarga qo'shib yuboriladi.
+  // X bosilganda: chiqqan-u hali tanlanmagan natija bo'lsa, avtomatik
+  // Inventarga qo'shiladi. Ochilmagan qolgan donalar hech qachon
+  // to'lanmagan, shuning uchun ular uchun hech narsa qilinmaydi.
   const handleClose = () => {
     if (won && !resolvedRef.current) {
       resolvedRef.current = true;
@@ -329,6 +353,14 @@ function CaseOpenModal({ cs, skins, balance, onClose, onOpened, onResolve }) {
             >
               {cs.name}
             </span>
+            {qty > 1 && (
+              <span
+                className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                style={{ background: "#1B2030", color: "#7C8399" }}
+              >
+                {round} / {qty}
+              </span>
+            )}
           </div>
           <button
             onClick={phase === "loading" ? undefined : handleClose}
@@ -397,10 +429,7 @@ function CaseOpenModal({ cs, skins, balance, onClose, onOpened, onResolve }) {
                     >
                       <div
                         className="w-[92px] h-[88px] rounded-xl overflow-hidden"
-                        style={{
-                          background: "#171B27",
-                          border: `1px solid ${Rr.color}44`,
-                        }}
+                        style={{ background: Rr.bg, border: `1px solid ${Rr.color}55` }}
                       >
                         <Thumb
                           image={s.image}
@@ -408,6 +437,7 @@ function CaseOpenModal({ cs, skins, balance, onClose, onOpened, onResolve }) {
                           glow={Rr.glow}
                           Icon={Icon}
                           size={26}
+                          plain
                         />
                       </div>
                     </div>
@@ -421,7 +451,7 @@ function CaseOpenModal({ cs, skins, balance, onClose, onOpened, onResolve }) {
             <div className="flex flex-col items-center py-2">
               <div
                 className="relative w-32 h-32 rounded-2xl overflow-hidden flex items-center justify-center mb-3 animate-[dropIn_.5s_ease-out]"
-                style={{ border: `2px solid ${R.color}88`, boxShadow: `0 0 24px ${R.glow}` }}
+                style={{ background: R.bg, border: `1px solid ${R.color}66` }}
               >
                 <Thumb
                   image={won.image}
@@ -429,6 +459,7 @@ function CaseOpenModal({ cs, skins, balance, onClose, onOpened, onResolve }) {
                   glow={R.glow}
                   Icon={iconFor(won.id)}
                   size={54}
+                  plain
                 />
                 {isBig && (
                   <RarityBurst color={R.color} big={won.rarity === "myth"} />
@@ -504,79 +535,9 @@ function CaseOpenModal({ cs, skins, balance, onClose, onOpened, onResolve }) {
 }
 
 /* ---------------------------------------------------------------
-   KO'P DONA OCHISH NATIJASI
+   CASE DETAIL SCREEN
 ----------------------------------------------------------------*/
-function BulkResultModal({ results, onClose, onSellAll, selling }) {
-  const total = results.reduce((a, r) => a + r.skin.price, 0);
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      style={{ background: "rgba(5,6,10,.78)", backdropFilter: "blur(6px)" }}
-    >
-      <div
-        className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden flex flex-col"
-        style={{ background: "#12151F", border: "1px solid #232838", maxHeight: "85vh" }}
-      >
-        <div
-          className="flex items-center justify-between px-4 py-3.5"
-          style={{ borderBottom: "1px solid #1B2030" }}
-        >
-          <span className="text-sm font-semibold" style={{ color: "#EDEFF6" }}>
-            Natijalar ({results.length})
-          </span>
-          <button
-            onClick={onClose}
-            className="w-7 h-7 rounded-full flex items-center justify-center"
-            style={{ background: "#1B2030" }}
-          >
-            <X size={14} color="#7C8399" />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="grid grid-cols-3 gap-2">
-            {results.map((r, i) => (
-              <SkinCard key={i} skin={r.skin} size="sm" />
-            ))}
-          </div>
-        </div>
-        <div
-          className="px-4 pt-1 pb-2 text-xs font-semibold text-center"
-          style={{ color: "#7C8399" }}
-        >
-          Jami qiymat: <span style={{ color: "#22E5C8" }}>${fmt(total)}</span>
-        </div>
-        <div className="p-4 pt-1 flex gap-2">
-          <button
-            onClick={onSellAll}
-            disabled={selling}
-            className="flex-1 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5"
-            style={{
-              background: "linear-gradient(90deg,#22E5C8,#4EA1FF)",
-              color: "#0A0D14",
-              opacity: selling ? 0.6 : 1,
-            }}
-          >
-            <Tag size={14} /> {selling ? "Sotilmoqda..." : "Hammasini sotish"}
-          </button>
-          <button
-            onClick={onClose}
-            className="flex-1 py-3 rounded-2xl text-sm font-semibold"
-            style={{ background: "#1B2030", color: "#EDEFF6" }}
-          >
-            Inventarga qoldirish
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ---------------------------------------------------------------
-   CASE DETAIL SCREEN — case bosilganda ochiladigan to'liq sahifa:
-   katta banner, narx, miqdor tanlash, "Ochish" tugmasi, pastda
-   shu case'dagi barcha skinlar (rarity bo'yicha kamayish tartibida)
-----------------------------------------------------------------*/
-function CaseDetailScreen({ cs, skins, balance, onBack, onOpenSingle, onOpenBulk }) {
+function CaseDetailScreen({ cs, skins, balance, onBack, onOpen }) {
   const [qty, setQty] = useState(1);
   const Icon = iconFor(cs.id);
   const eligible = skins
@@ -675,9 +636,7 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onOpenSingle, onOpenBulk
           </div>
 
           <button
-            onClick={() =>
-              qty === 1 ? onOpenSingle(cs) : onOpenBulk(cs, qty)
-            }
+            onClick={() => onOpen(cs, qty)}
             disabled={!canAfford}
             className="w-full py-3.5 rounded-2xl font-bold text-sm"
             style={{
@@ -1255,7 +1214,7 @@ function ProfileScreen({ user, balance, inventory, refCode, refStats }) {
 }
 
 /* ---------------------------------------------------------------
-   ADMIN PANEL — bevosita backendga yozadi
+   ADMIN PANEL
 ----------------------------------------------------------------*/
 function NumField({ label, value, onChange }) {
   return (
@@ -1629,10 +1588,8 @@ export default function App() {
   const [skins, setSkins] = useState([]);
   const [balance, setBalance] = useState(0);
   const [inventory, setInventory] = useState([]);
-  const [openCase, setOpenCase] = useState(null);
-  const [viewingCase, setViewingCase] = useState(null); // Case detail sahifasi
-  const [bulkResults, setBulkResults] = useState(null);
-  const [bulkSelling, setBulkSelling] = useState(false);
+  const [openCase, setOpenCase] = useState(null); // { cs, qty }
+  const [viewingCase, setViewingCase] = useState(null);
   const [dailyAvailable, setDailyAvailable] = useState(false);
   const [txs, setTxs] = useState([]);
   const [user, setUser] = useState({
@@ -1645,8 +1602,6 @@ export default function App() {
   const [listings, setListings] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
-  // Har bir so'rov ALOHIDA try/catch bilan — bittasi xato bersa ham
-  // qolganlari ishlashda davom etadi.
   useEffect(() => {
     (async () => {
       try {
@@ -1713,7 +1668,6 @@ export default function App() {
         console.error("MARKET XATOSI:", err.response?.data || err.message);
       }
 
-      // Referral link orqali kirgan bo'lsa (?ref=CODE) — avtomatik bog'lash
       try {
         const params = new URLSearchParams(window.location.search);
         const refCode = params.get("ref");
@@ -1746,54 +1700,6 @@ export default function App() {
     } else {
       setInventory((inv) => [{ ...won, _invId: won.invId }, ...inv]);
     }
-  };
-
-  // Ko'p dona bir yo'la ochish
-  const handleBulkOpen = async (cs, qty) => {
-    try {
-      const results = [];
-      let lastBalance = balance;
-      for (let i = 0; i < qty; i++) {
-        const res = await client.post(`/cases/${cs.id}/open`);
-        const skin = norm(res.data.skin);
-        const invId = res.data.inventoryItem._id;
-        results.push({ skin, invId });
-        lastBalance = res.data.balance;
-      }
-      setBalance(lastBalance);
-      addTx(`Case ochish x${qty} (${cs.name})`, -(cs.price * qty));
-      setInventory((inv) => [
-        ...results.map((r) => ({ ...r.skin, _invId: r.invId })),
-        ...inv,
-      ]);
-      setBulkResults(results);
-    } catch (err) {
-      alert(err.response?.data?.error || "Xatolik");
-    }
-  };
-
-  const handleSellAllBulk = async () => {
-    if (!bulkResults) return;
-    setBulkSelling(true);
-    let newBalance = balance;
-    const soldIds = [];
-    for (const r of bulkResults) {
-      try {
-        const res = await client.post(`/inventory/${r.invId}/sell`);
-        newBalance = res.data.balance;
-        soldIds.push(r.invId);
-      } catch (err) {
-        // ayrim item sotib bo'lmasa ham davom etamiz
-      }
-    }
-    setBalance(newBalance);
-    setInventory((inv) => inv.filter((item) => !soldIds.includes(item._invId)));
-    const totalSold = bulkResults
-      .filter((r) => soldIds.includes(r.invId))
-      .reduce((a, r) => a + r.skin.price * 0.9, 0);
-    if (totalSold > 0) addTx(`Ko'p sotish (${soldIds.length} ta)`, totalSold);
-    setBulkSelling(false);
-    setBulkResults(null);
   };
 
   const handleDaily = async () => {
@@ -1910,8 +1816,7 @@ export default function App() {
               skins={skins}
               balance={balance}
               onBack={() => setViewingCase(null)}
-              onOpenSingle={(cs) => setOpenCase(cs)}
-              onOpenBulk={handleBulkOpen}
+              onOpen={(cs, qty) => setOpenCase({ cs, qty })}
             />
           ) : (
             <>
@@ -2019,21 +1924,13 @@ export default function App() {
 
         {openCase && (
           <CaseOpenModal
-            cs={openCase}
+            cs={openCase.cs}
+            qty={openCase.qty}
             skins={skins}
             balance={balance}
             onClose={() => setOpenCase(null)}
             onOpened={handleOpened}
             onResolve={handleResolve}
-          />
-        )}
-
-        {bulkResults && (
-          <BulkResultModal
-            results={bulkResults}
-            onClose={() => setBulkResults(null)}
-            onSellAll={handleSellAllBulk}
-            selling={bulkSelling}
           />
         )}
 
