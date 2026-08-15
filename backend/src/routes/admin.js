@@ -1,29 +1,86 @@
+// backend/src/routes/admin.js
 const express = require('express');
 const router = express.Router();
 const Case = require('../models/Case');
 const Skin = require('../models/Skin');
 const adminAuth = require('../middleware/adminAuth');
 
-router.use(adminAuth); // BU QATOR MUHIM — barcha pastdagi route'larni himoyalaydi
+router.use(adminAuth);
 
 router.get('/verify', (req, res) => res.json({ ok: true }));
 
-router.post('/cases', async (req, res) => {
-  const cs = await Case.create(req.body);
-  res.json(cs);
+// --- CASES CRUD ---
+router.get('/cases', async (req, res) => {
+  try {
+    const cases = await Case.find();
+    res.json(cases);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
+
+router.post('/cases', async (req, res) => {
+  try {
+    const cs = await Case.create(req.body);
+    res.json(cs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/cases/:id', async (req, res) => {
+  try {
+    const updatedCase = await Case.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(updatedCase);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.delete('/cases/:id', async (req, res) => {
-  await Case.findByIdAndDelete(req.params.id);
-  res.json({ ok: true });
+  try {
+    await Case.findByIdAndDelete(req.params.id);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- SKINS CRUD ---
+router.get('/skins', async (req, res) => {
+  try {
+    const skins = await Skin.find();
+    res.json(skins);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.post('/skins', async (req, res) => {
-  const s = await Skin.create(req.body);
-  res.json(s);
+  try {
+    const s = await Skin.create(req.body);
+    res.json(s);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
+
+router.put('/skins/:id', async (req, res) => {
+  try {
+    const updatedSkin = await Skin.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(updatedSkin);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.delete('/skins/:id', async (req, res) => {
-  await Skin.findByIdAndDelete(req.params.id);
-  res.json({ ok: true });
+  try {
+    await Skin.findByIdAndDelete(req.params.id);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;

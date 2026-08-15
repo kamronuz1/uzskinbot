@@ -173,7 +173,6 @@ function MiniReel({ skins, winner, height, itemWidth, onDone }) {
   const DURATION = 4.2; // CS2 style smooth spin duration
 
   useEffect(() => {
-    // Generate reel array (Winner is placed deep at index 35)
     const WIN_INDEX = 35;
     const arr = Array.from(
       { length: 42 },
@@ -184,7 +183,6 @@ function MiniReel({ skins, winner, height, itemWidth, onDone }) {
 
     const raf1 = requestAnimationFrame(() => {
       const w = containerRef.current?.offsetWidth || itemWidth * 3;
-      // Random offset inside winning tile for realistic feel
       const randomPadding = Math.random() * (itemWidth * 0.6) - itemWidth * 0.3;
       const target = -(WIN_INDEX * itemWidth + itemWidth / 2 - w / 2) + randomPadding;
 
@@ -209,17 +207,12 @@ function MiniReel({ skins, winner, height, itemWidth, onDone }) {
       className="relative rounded-2xl overflow-hidden bg-[#07090e] border-2 border-[#00ff66]/30 shadow-[0_0_25px_rgba(0,255,102,0.15)] my-2"
       style={{ height }}
     >
-      {/* CS2 Needle Pointer Top/Bottom */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 z-30 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[12px] border-t-[#00ff66] drop-shadow-[0_0_8px_#00ff66]" />
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-30 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[12px] border-b-[#00ff66] drop-shadow-[0_0_8px_#00ff66]" />
       
-      {/* Center Laser Beam Line */}
       <div className="absolute left-1/2 top-0 bottom-0 w-[2px] z-20 bg-[#00ff66] shadow-[0_0_15px_#00ff66] opacity-80" />
-      
-      {/* Vignette Blur Gradient Sides */}
       <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-r from-[#07090e] via-transparent to-[#07090e] opacity-90" />
 
-      {/* Moving Track */}
       <div
         className="flex h-full items-center absolute left-0 top-0"
         style={{
@@ -300,7 +293,6 @@ function CaseDetailScreen({
   const totalPrice = cs.price * qty;
   const canAfford = balance >= totalPrice;
 
-  // Keyingi sahifaga o'tganda yoki orqaga qaytganda invertarni yangilash
   const handleExit = () => {
     refreshInventory();
     onBack();
@@ -309,7 +301,7 @@ function CaseDetailScreen({
   useEffect(() => {
     if (phase === "spinning" && busyQty > 0 && doneCount >= busyQty) {
       setPhase("result");
-      refreshInventory(); // Spinning tugashi bilan inventar backend'dan yangilanadi!
+      refreshInventory();
       const best = winners.reduce(
         (b, w) =>
           RARITY_ORDER.indexOf(w.skin.rarity) > RARITY_ORDER.indexOf(b)
@@ -643,7 +635,6 @@ function HomeScreen({
         </button>
       </div>
 
-      {/* BALANCE CARD */}
       <div className="mx-4 rounded-2xl p-5 relative overflow-hidden mb-5 bg-[#12161f] border border-[#00ff66]/30 shadow-[0_0_25px_rgba(0,255,102,0.1)]">
         <div className="absolute top-0 right-0 w-32 h-32 bg-[#00ff66]/10 rounded-full blur-2xl pointer-events-none" />
         <div className="relative flex justify-between items-end">
@@ -664,7 +655,6 @@ function HomeScreen({
         </div>
       </div>
 
-      {/* DAILY BONUS */}
       <div className="mx-4 mb-6 rounded-xl p-3.5 flex items-center justify-between bg-[#12161f] border border-white/5">
         <div className="flex items-center gap-3">
           <div
@@ -696,7 +686,6 @@ function HomeScreen({
         </button>
       </div>
 
-      {/* CASES SECTION */}
       <div className="px-4 flex items-center justify-between mb-3">
         <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-1.5">
           <Package size={16} className="text-[#00ff66]" /> Case'lar
@@ -714,7 +703,6 @@ function HomeScreen({
         ))}
       </div>
 
-      {/* TOP SKINS SECTION */}
       <div className="px-4 mt-6">
         <h2 className="text-sm font-black text-white uppercase tracking-wider mb-3 flex items-center gap-1.5">
           <Sparkles size={16} className="text-[#00ff66]" /> Top Skinlar
@@ -1383,7 +1371,6 @@ export default function App() {
   const [listings, setListings] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
-  // Inventarni backend'dan qayta yuklab olish funksiyasi
   const fetchInventory = async () => {
     try {
       const invRes = await client.get("/inventory");
