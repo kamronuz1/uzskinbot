@@ -36,11 +36,19 @@ router.post('/:id/open', telegramAuth, async (req, res) => {
     if (user.balance < cs.price) throw new Error('Balans yetarli emas');
 
     const rarity = pickWeighted(cs.odds);
-    const pool = await Skin.find({ rarity }).session(session);
-    const winner = pool.length
-      ? pool[Math.floor(Math.random() * pool.length)]
-      : (await Skin.find().session(session))[0];
-    if (!winner) throw new Error('Skinlar bazasi bo‘sh');
+    
+    // O'ZGARISH: Faqat shu keysga tegishli (caseId) va chiqqan rarity'dagi skinlarni qidiramiz
+    let pool = await Skin.find({ caseId: cs._id, rarity }).session(session);
+    
+    // Agar o'sha keysda aynan o'sha rarity'dagi skin topilmasa, shu keysning o'zidan istalgan boshqa skinni olamiz
+    if (!pool.length) {
+      pool = await Skin.find({ caseId: cs._id }).session(session);
+    }
+    
+    // Agar umuman bu keysga skin biriktirilmagan bo'lsa
+    if (!pool.length) throw new Error('Bu keysga skinlar qo‘shilmagan');
+
+    const winner = pool[Math.floor(Math.random() * pool.length)];
 
     user.balance -= cs.price;
     user.casesOpened += 1;
