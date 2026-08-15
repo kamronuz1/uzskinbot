@@ -2,6 +2,8 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const Referral = require('../models/Referral');
 
+const REF_BONUS = 5; // Referral bonusi miqdori
+
 function checkTelegramAuth(initData, botToken) {
   if (!initData) return false;
 
@@ -43,7 +45,6 @@ async function telegramAuth(req, res, next) {
     if (!userJson) return res.status(401).json({ error: 'User topilmadi' });
     const tgUser = JSON.parse(userJson);
 
-    // Xavfsiz tarzda o'qish uchun tekshiruv qo'shildi
     const refCode = urlParams.get('start_param') || 
                     (req.query && req.query.ref) || 
                     (req.body && req.body.ref);
@@ -72,10 +73,16 @@ async function telegramAuth(req, res, next) {
       });
 
       if (isValidReferrer) {
+        // Referral yozuvini yaratamiz va bonusPaid: true qilamiz
         await Referral.create({
           referrer: referrerUser._id,
-          referred: user._id
+          referred: user._id,
+          bonusPaid: true
         });
+
+        // Taklif qilgan odamning balansini oshiramiz
+        referrerUser.balance += REF_BONUS;
+        await referrerUser.save();
       }
     }
 
