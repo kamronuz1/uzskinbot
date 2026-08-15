@@ -17,8 +17,6 @@ import {
   Crown,
   ChevronRight,
   Check,
-  X,
-  Copy,
   ArrowUpRight,
   ArrowDownRight,
   History,
@@ -27,41 +25,43 @@ import {
   Trash2,
   ArrowLeft,
   Tag,
+  Sparkles,
+  Wallet,
 } from "lucide-react";
 
 /* ---------------------------------------------------------------
-   TOKENS
+   TOKENS & RARITY (NEON GAMING STYLE)
 ----------------------------------------------------------------*/
 const RARITY = {
   common: {
     label: "Oddiy",
-    color: "#8A93A6",
-    glow: "rgba(138,147,166,.32)",
-    bg: "linear-gradient(165deg, rgba(138,147,166,.30) 0%, rgba(138,147,166,.07) 55%, #12151F 100%)",
+    color: "#9CA3AF",
+    glow: "rgba(156,163,175,0.25)",
+    bg: "linear-gradient(165deg, rgba(156,163,175,0.15) 0%, rgba(18,22,31,0.9) 100%)",
   },
   rare: {
     label: "Noyob",
-    color: "#4EA1FF",
-    glow: "rgba(78,161,255,.48)",
-    bg: "linear-gradient(165deg, rgba(78,161,255,.48) 0%, rgba(78,161,255,.10) 55%, #12151F 100%)",
+    color: "#3B82F6",
+    glow: "rgba(59,130,246,0.35)",
+    bg: "linear-gradient(165deg, rgba(59,130,246,0.2) 0%, rgba(18,22,31,0.9) 100%)",
   },
   epic: {
     label: "Epik",
-    color: "#B24BFF",
-    glow: "rgba(178,75,255,.56)",
-    bg: "linear-gradient(165deg, rgba(178,75,255,.58) 0%, rgba(178,75,255,.14) 55%, #12151F 100%)",
+    color: "#A855F7",
+    glow: "rgba(168,85,247,0.45)",
+    bg: "linear-gradient(165deg, rgba(168,85,247,0.25) 0%, rgba(18,22,31,0.9) 100%)",
   },
   legend: {
     label: "Afsonaviy",
-    color: "#FFB020",
-    glow: "rgba(255,176,32,.62)",
-    bg: "linear-gradient(165deg, rgba(255,176,32,.62) 0%, rgba(255,176,32,.16) 55%, #12151F 100%)",
+    color: "#EAB308",
+    glow: "rgba(234,179,8,0.55)",
+    bg: "linear-gradient(165deg, rgba(234,179,8,0.3) 0%, rgba(18,22,31,0.9) 100%)",
   },
   myth: {
     label: "Mif",
-    color: "#FF3B6E",
-    glow: "rgba(255,59,110,.68)",
-    bg: "linear-gradient(165deg, rgba(255,59,110,.68) 0%, rgba(255,59,110,.18) 55%, #12151F 100%)",
+    color: "#EF4444",
+    glow: "rgba(239,68,68,0.65)",
+    bg: "linear-gradient(165deg, rgba(239,68,68,0.35) 0%, rgba(18,22,31,0.9) 100%)",
   },
 };
 const RARITY_ORDER = ["common", "rare", "epic", "legend", "myth"];
@@ -81,62 +81,43 @@ const fmt = (n) =>
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-const uid = () => Math.random().toString(36).slice(2, 9);
 const norm = (o) => (o ? { ...o, id: o._id || o.id } : o);
 
 function Thumb({ image, color, glow, Icon, size = 32, plain = false }) {
   const style = image
     ? {
         backgroundImage: `url(${image})`,
-        backgroundSize: "cover",
+        backgroundSize: "contain",
+        backgroundRepeat: "no-repeat",
         backgroundPosition: "center",
       }
     : plain
     ? {}
     : {
-        background: `radial-gradient(circle at 50% 32%, ${glow} 0%, ${glow} 38%, transparent 82%)`,
+        background: `radial-gradient(circle at 50% 50%, ${glow} 0%, transparent 75%)`,
       };
   return (
-    <div
-      className="w-full h-full flex items-center justify-center"
-      style={style}
-    >
+    <div className="w-full h-full flex items-center justify-center p-2">
       {!image && (
         <Icon
           size={size}
           color={color}
           strokeWidth={1.5}
-          style={{ filter: `drop-shadow(0 0 10px ${glow})` }}
+          style={{ filter: `drop-shadow(0 0 8px ${color})` }}
         />
       )}
     </div>
   );
 }
-function Pill({ children, color = "#7C5CFC" }) {
-  return (
-    <span
-      className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
-      style={{ background: `${color}22`, color }}
-    >
-      {children}
-    </span>
-  );
-}
+
 function ScreenHeader({ title, sub, right }) {
   return (
-    <div className="flex items-center justify-between px-4 pt-5 pb-3">
+    <div className="flex items-center justify-between px-5 pt-6 pb-4">
       <div>
-        <h1
-          className="text-lg font-bold tracking-tight"
-          style={{ color: "#EDEFF6" }}
-        >
+        <h1 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
           {title}
         </h1>
-        {sub && (
-          <p className="text-xs mt-0.5" style={{ color: "#7C8399" }}>
-            {sub}
-          </p>
-        )}
+        {sub && <p className="text-xs mt-0.5 text-gray-400">{sub}</p>}
       </div>
       {right}
     </div>
@@ -144,40 +125,31 @@ function ScreenHeader({ title, sub, right }) {
 }
 
 function SkinCard({ skin, onClick, badge, size = "md" }) {
-  const R = RARITY[skin.rarity];
+  const R = RARITY[skin.rarity] || RARITY.common;
   const Icon = iconFor(skin.id);
   const h = size === "lg" ? "h-36" : size === "sm" ? "h-24" : "h-28";
   return (
     <button
       onClick={onClick}
-      className="relative rounded-2xl overflow-hidden text-left w-full transition-transform active:scale-[0.97]"
-      style={{
-        background: "#12151F",
-        border: `1px solid ${R.color}40`,
-      }}
+      className="relative rounded-xl overflow-hidden text-left w-full transition-all duration-200 hover:-translate-y-1 active:scale-[0.97] bg-[#12161f] border border-white/5 hover:border-[#00ff66]/50 group"
+      style={{ boxShadow: `0 4px 20px ${R.glow}` }}
     >
-      <div className={`relative ${h}`} style={{ background: R.bg }}>
+      <div className={`relative ${h} flex items-center justify-center`} style={{ background: R.bg }}>
         <Thumb image={skin.image} color={R.color} glow={R.glow} Icon={Icon} plain />
         {badge}
       </div>
-      <div className="px-2.5 pb-2.5 pt-1.5">
-        <div
-          className="text-[11px] font-medium truncate"
-          style={{ color: "#EDEFF6" }}
-        >
+      <div className="p-2.5 bg-[#0f131a]">
+        <div className="text-xs font-bold text-white truncate group-hover:text-[#00ff66] transition-colors">
           {skin.name}
         </div>
-        <div className="flex items-center justify-between mt-1">
+        <div className="flex items-center justify-between mt-1.5">
           <span
-            className="text-[9px] uppercase tracking-wide font-bold"
+            className="text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded bg-black/40 border border-white/5"
             style={{ color: R.color }}
           >
             {R.label}
           </span>
-          <span
-            className="text-[10px] font-semibold"
-            style={{ color: "#7C8399" }}
-          >
+          <span className="text-xs font-extrabold text-[#00ff66] font-mono">
             ${fmt(skin.price)}
           </span>
         </div>
@@ -187,8 +159,7 @@ function SkinCard({ skin, onClick, badge, size = "md" }) {
 }
 
 /* ---------------------------------------------------------------
-   MINI REEL — bitta donaning aylanib-tushish animatsiyasi.
-   Bir nechtasi bir vaqtda, yonma-yon ishga tushirilishi mumkin.
+   MINI REEL — CASE OPENING ANIMATION (NEON STYLE)
 ----------------------------------------------------------------*/
 function MiniReel({ skins, winner, height, itemWidth, onDone }) {
   const containerRef = useRef(null);
@@ -226,44 +197,34 @@ function MiniReel({ skins, winner, height, itemWidth, onDone }) {
   return (
     <div
       ref={containerRef}
-      className="relative rounded-xl overflow-hidden"
-      style={{ height, background: "#0A0D14", border: "1px solid #1B2030" }}
+      className="relative rounded-xl overflow-hidden bg-[#0a0d14] border border-[#00ff66]/30 shadow-[0_0_15px_rgba(0,255,102,0.1)]"
+      style={{ height }}
     >
-      <div
-        className="absolute left-1/2 top-0 bottom-0 w-[2px] z-10"
-        style={{ background: "#7C5CFC", boxShadow: "0 0 10px #7C5CFC" }}
-      />
-      <div
-        className="absolute inset-0 z-[5]"
-        style={{
-          background:
-            "linear-gradient(90deg,#0A0D14 0%, transparent 18%, transparent 82%, #0A0D14 100%)",
-        }}
-      />
+      {/* Target Marker Pointer */}
+      <div className="absolute left-1/2 top-0 bottom-0 w-[2px] z-20 bg-[#00ff66] shadow-[0_0_12px_#00ff66]" />
+      <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-r from-[#0a0d14] via-transparent to-[#0a0d14]" />
       <div
         className="flex h-full items-center absolute left-0 top-0"
         style={{
           transform: `translateX(${offset}px)`,
-          transition: started ? `transform ${DURATION}s cubic-bezier(0.09,0.82,0.12,1)` : "none",
+          transition: started ? `transform ${DURATION}s cubic-bezier(0.08,0.82,0.12,1)` : "none",
         }}
       >
         {items.map((s, i) => {
-          const R = RARITY[s.rarity];
+          const R = RARITY[s.rarity] || RARITY.common;
           const Icon = iconFor(s.id + i);
           const inner = Math.max(18, itemWidth * 0.3);
           return (
             <div
               key={i}
-              className="flex-shrink-0 flex items-center justify-center"
+              className="flex-shrink-0 flex items-center justify-center p-1"
               style={{ width: itemWidth, height }}
             >
               <div
-                className="rounded-lg overflow-hidden"
+                className="w-full h-full rounded-lg overflow-hidden flex flex-col items-center justify-center border"
                 style={{
-                  width: itemWidth - 14,
-                  height: height - 14,
                   background: R.bg,
-                  border: `1px solid ${R.color}55`,
+                  borderColor: `${R.color}66`,
                 }}
               >
                 <Thumb image={s.image} color={R.color} glow={R.glow} Icon={Icon} size={inner} plain />
@@ -277,12 +238,12 @@ function MiniReel({ skins, winner, height, itemWidth, onDone }) {
 }
 
 /* ---------------------------------------------------------------
-   CASE DETAIL SCREEN — ochish endi shu yerning o'zida, modalsiz
+   CASE DETAIL SCREEN
 ----------------------------------------------------------------*/
 function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx, onAddToInventory }) {
   const [qty, setQty] = useState(1);
-  const [phase, setPhase] = useState("idle"); // idle | fetching | spinning | result
-  const [winners, setWinners] = useState([]); // [{skin, invId}]
+  const [phase, setPhase] = useState("idle");
+  const [winners, setWinners] = useState([]);
   const [busyQty, setBusyQty] = useState(1);
   const [doneCount, setDoneCount] = useState(0);
   const [errMsg, setErrMsg] = useState("");
@@ -362,9 +323,7 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx
         const res = await client.post(`/inventory/${w.invId}/sell`);
         bal = res.data.balance;
         total += w.skin.price * 0.9;
-      } catch (err) {
-        // birortasi sotilmasa ham davom etamiz
-      }
+      } catch (err) {}
     }
     onBalanceChange(bal);
     if (total > 0) {
@@ -375,93 +334,73 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx
   };
 
   const cols = busyQty === 1 ? 1 : busyQty <= 4 ? 2 : 3;
-  const reelH = busyQty === 1 ? 112 : busyQty <= 4 ? 88 : 70;
-  const reelW = busyQty === 1 ? 108 : busyQty <= 4 ? 84 : 66;
+  const reelH = busyQty === 1 ? 120 : busyQty <= 4 ? 90 : 75;
+  const reelW = busyQty === 1 ? 110 : busyQty <= 4 ? 85 : 70;
 
   return (
-    <div className="pb-24">
+    <div className="pb-28">
       <div className="flex items-center justify-between px-4 pt-5 pb-3">
         <button
           onClick={onBack}
-          className="w-9 h-9 rounded-xl flex items-center justify-center"
-          style={{ background: "#12151F", border: "1px solid #232838" }}
+          className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#12161f] border border-white/10 hover:border-[#00ff66]/50 text-gray-300 transition-colors"
         >
-          <ArrowLeft size={16} color="#7C8399" />
+          <ArrowLeft size={18} />
         </button>
-        <span className="text-sm font-bold" style={{ color: "#EDEFF6" }}>
+        <span className="text-base font-extrabold text-white tracking-wide">
           {cs.name}
         </span>
-        <div className="w-9" />
+        <div className="w-10" />
       </div>
 
-      <div
-        className="mx-4 rounded-3xl overflow-hidden relative mb-5"
-        style={{ minHeight: 250 }}
-      >
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `radial-gradient(120% 90% at 50% 0%, ${cs.color}55 0%, transparent 55%), linear-gradient(180deg, #171B27 0%, #0A0D14 55%, #05060A 100%)`,
-          }}
-        />
+      <div className="mx-4 rounded-2xl bg-[#12161f] border border-[#00ff66]/20 relative mb-6 p-5 overflow-hidden shadow-[0_0_30px_rgba(0,255,102,0.05)]">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#00ff66]/10 via-transparent to-transparent pointer-events-none" />
+        
         {flashColor && (
           <div
-            className="absolute inset-0 pointer-events-none animate-[flashOut_.5s_ease-out_forwards]"
+            className="absolute inset-0 pointer-events-none animate-ping opacity-50 z-30"
             style={{ background: flashColor }}
           />
         )}
 
-        <div className="relative flex flex-col items-center pt-8 pb-6 px-4">
+        <div className="relative flex flex-col items-center">
           <div
-            className="w-24 h-24 rounded-3xl flex items-center justify-center mb-4"
-            style={{
-              background: `radial-gradient(circle, ${cs.color}40, transparent 72%)`,
-              border: `1px solid ${cs.color}66`,
-            }}
+            className="w-24 h-24 rounded-2xl flex items-center justify-center mb-3 bg-[#0a0d14] border border-[#00ff66]/40 shadow-[0_0_20px_rgba(0,255,102,0.2)]"
           >
             <Icon
-              size={44}
-              color={cs.color}
-              strokeWidth={1.3}
-              style={{ filter: `drop-shadow(0 0 14px ${cs.color}88)` }}
+              size={46}
+              color={cs.color || "#00ff66"}
+              strokeWidth={1.4}
+              style={{ filter: `drop-shadow(0 0 10px ${cs.color || "#00ff66"})` }}
             />
           </div>
-          <div className="text-lg font-extrabold mb-1" style={{ color: "#EDEFF6" }}>
+          <div className="text-xl font-black text-white mb-1 tracking-tight">
             {cs.name}
           </div>
-          <div className="flex items-center gap-1.5 mb-5">
-            <Gift size={14} color={cs.color} />
-            <span className="text-base font-bold" style={{ color: cs.color }}>
-              ${fmt(cs.price)}
-            </span>
+          <div className="flex items-center gap-1.5 mb-5 font-mono text-lg font-black text-[#00ff66]">
+            ${fmt(cs.price)}
           </div>
 
           {errMsg && (
-            <div
-              className="w-full mb-3 text-xs font-semibold text-center"
-              style={{ color: "#FF3B6E" }}
-            >
+            <div className="w-full mb-3 text-xs font-bold text-red-500 text-center bg-red-500/10 py-2 rounded-lg border border-red-500/20">
               {errMsg}
             </div>
           )}
 
           {phase === "idle" && (
             <>
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-4 mb-4">
                 <button
                   onClick={() => setQty((q) => Math.max(1, q - 1))}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-base font-bold"
-                  style={{ background: "#171B27", color: "#EDEFF6", border: "1px solid #232838" }}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-lg font-black bg-[#0a0d14] border border-white/10 text-white hover:border-[#00ff66]/50"
                 >
                   −
                 </button>
-                <span className="text-sm font-bold w-6 text-center" style={{ color: "#EDEFF6" }}>
+                <span className="text-base font-black text-white w-6 text-center font-mono">
                   {qty}
                 </span>
                 <button
                   onClick={() => setQty((q) => Math.min(10, q + 1))}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-base font-bold"
-                  style={{ background: "#171B27", color: "#EDEFF6", border: "1px solid #232838" }}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-lg font-black bg-[#0a0d14] border border-white/10 text-white hover:border-[#00ff66]/50"
                 >
                   +
                 </button>
@@ -469,13 +408,11 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx
               <button
                 onClick={handleOpenClick}
                 disabled={!canAfford}
-                className="w-full py-3.5 rounded-2xl font-bold text-sm"
-                style={{
-                  background: canAfford
-                    ? "linear-gradient(90deg,#7C5CFC,#22E5C8)"
-                    : "#1B2030",
-                  color: canAfford ? "#0A0D14" : "#7C8399",
-                }}
+                className={`w-full py-3.5 rounded-xl font-black text-sm uppercase tracking-wider transition-all duration-200 ${
+                  canAfford
+                    ? "bg-[#00ff66] text-black shadow-[0_0_20px_rgba(0,255,102,0.4)] hover:bg-[#00e65c] active:scale-[0.98]"
+                    : "bg-gray-800 text-gray-500 cursor-not-allowed border border-white/5"
+                }`}
               >
                 {canAfford ? `Ochish — $${fmt(totalPrice)}` : "Balans yetarli emas"}
               </button>
@@ -483,8 +420,8 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx
           )}
 
           {phase === "fetching" && (
-            <div className="w-full py-3.5 rounded-2xl text-center text-sm font-semibold" style={{ background: "#171B27", color: "#7C8399" }}>
-              Yuklanmoqda...
+            <div className="w-full py-4 rounded-xl text-center text-xs font-black uppercase tracking-widest text-[#00ff66] bg-[#0a0d14] border border-[#00ff66]/30 animate-pulse">
+              Tayyorlanmoqda...
             </div>
           )}
 
@@ -510,16 +447,17 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx
                 style={{ gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))` }}
               >
                 {winners.map((w, i) => {
-                  const R = RARITY[w.skin.rarity];
+                  const R = RARITY[w.skin.rarity] || RARITY.common;
                   const Ic = iconFor(w.skin.id);
                   return (
                     <div
                       key={i}
-                      className="relative rounded-xl overflow-hidden animate-[dropIn_.4s_ease-out]"
+                      className="relative rounded-xl overflow-hidden animate-[dropIn_.4s_ease-out] border flex flex-col items-center justify-center"
                       style={{
-                        height: busyQty === 1 ? 128 : 96,
+                        height: busyQty === 1 ? 130 : 100,
                         background: R.bg,
-                        border: `1px solid ${R.color}77`,
+                        borderColor: R.color,
+                        boxShadow: `0 0 20px ${R.glow}`,
                       }}
                     >
                       <Thumb
@@ -527,22 +465,19 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx
                         color={R.color}
                         glow={R.glow}
                         Icon={Ic}
-                        size={busyQty === 1 ? 46 : 28}
+                        size={busyQty === 1 ? 48 : 30}
                         plain
                       />
-                      <div
-                        className="absolute bottom-1 left-1 right-1 text-[9px] font-bold text-center truncate"
-                        style={{ color: "#EDEFF6" }}
-                      >
+                      <div className="absolute bottom-1.5 inset-x-1 text-[10px] font-black text-center text-white truncate px-1 bg-black/60 rounded py-0.5">
                         {w.skin.name}
                       </div>
                     </div>
                   );
                 })}
               </div>
-              <div className="text-xs font-semibold text-center mb-3" style={{ color: "#7C8399" }}>
+              <div className="text-xs font-bold text-center mb-3 text-gray-400">
                 Jami qiymat:{" "}
-                <span style={{ color: "#22E5C8" }}>
+                <span className="text-[#00ff66] font-mono font-extrabold text-sm">
                   ${fmt(winners.reduce((a, w) => a + w.skin.price, 0))}
                 </span>
               </div>
@@ -550,12 +485,7 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx
                 <button
                   onClick={handleSellAll}
                   disabled={selling}
-                  className="flex-1 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5"
-                  style={{
-                    background: "linear-gradient(90deg,#22E5C8,#4EA1FF)",
-                    color: "#0A0D14",
-                    opacity: selling ? 0.6 : 1,
-                  }}
+                  className="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider bg-[#00ff66] text-black shadow-[0_0_15px_rgba(0,255,102,0.3)] hover:bg-[#00e65c] flex items-center justify-center gap-1.5"
                 >
                   <Tag size={14} />
                   {selling
@@ -566,10 +496,9 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx
                 </button>
                 <button
                   onClick={handleKeepAll}
-                  className="flex-1 py-3 rounded-2xl text-sm font-semibold"
-                  style={{ background: "#1B2030", color: "#EDEFF6" }}
+                  className="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider bg-[#0a0d14] text-white border border-white/10 hover:border-white/30"
                 >
-                  {busyQty === 1 ? "Inventarga" : "Inventarga saqlash"}
+                  {busyQty === 1 ? "Inventarga" : "Saqlash"}
                 </button>
               </div>
             </div>
@@ -578,10 +507,10 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx
       </div>
 
       <div className="px-4 flex items-center justify-between mb-3">
-        <h2 className="text-sm font-bold" style={{ color: "#EDEFF6" }}>
-          Ushbu case'dagi skinlar
+        <h2 className="text-sm font-black text-white uppercase tracking-wider">
+          Mavjud Skinlar
         </h2>
-        <span className="text-[11px]" style={{ color: "#7C8399" }}>
+        <span className="text-xs font-bold text-[#00ff66]">
           {eligible.length} ta
         </span>
       </div>
@@ -602,28 +531,21 @@ function CaseTile({ cs, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="rounded-2xl p-3 flex flex-col items-center gap-2 active:scale-95 transition-transform"
-      style={{
-        background: "linear-gradient(160deg,#171B27,#12151F)",
-        border: `1px solid ${cs.color}33`,
-      }}
+      className="rounded-2xl p-3.5 flex flex-col items-center gap-2 transition-all duration-200 hover:-translate-y-1 active:scale-95 bg-[#12161f] border border-white/5 hover:border-[#00ff66]/50 group shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
     >
-      <div className="w-12 h-12 rounded-xl overflow-hidden">
+      <div className="w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center bg-[#0a0d14] border border-white/5 group-hover:border-[#00ff66]/30">
         <Thumb
           image={cs.image}
-          color={cs.color}
-          glow={`${cs.color}44`}
+          color={cs.color || "#00ff66"}
+          glow={`${cs.color || "#00ff66"}44`}
           Icon={Icon}
-          size={22}
+          size={24}
         />
       </div>
-      <div
-        className="text-[11px] font-semibold text-center leading-tight"
-        style={{ color: "#EDEFF6" }}
-      >
+      <div className="text-xs font-bold text-center text-white truncate w-full group-hover:text-[#00ff66] transition-colors">
         {cs.name}
       </div>
-      <div className="text-[10px] font-bold" style={{ color: cs.color }}>
+      <div className="text-xs font-black text-[#00ff66] font-mono">
         ${fmt(cs.price)}
       </div>
     </button>
@@ -642,82 +564,56 @@ function HomeScreen({
   onAdmin,
 }) {
   return (
-    <div className="pb-24">
-      <div className="flex items-center justify-between px-4 pt-5 pb-3">
+    <div className="pb-28">
+      <div className="flex items-center justify-between px-5 pt-6 pb-4">
         <div>
-          <h1
-            className="text-lg font-bold tracking-tight"
-            style={{ color: "#EDEFF6" }}
-          >
-            Salom, {user.name}
+          <h1 className="text-xl font-black text-white tracking-tight">
+            Salom, <span className="text-[#00ff66]">{user.name}</span>
           </h1>
-          <p className="text-xs mt-0.5" style={{ color: "#7C8399" }}>
+          <p className="text-xs text-gray-400 mt-0.5">
             Bugun omadingizni sinab ko‘ring
           </p>
         </div>
         <button
           onClick={onAdmin}
-          className="w-9 h-9 rounded-xl flex items-center justify-center"
-          style={{ background: "#12151F", border: "1px solid #232838" }}
+          className="w-10 h-10 rounded-xl bg-[#12161f] border border-white/10 flex items-center justify-center text-gray-300 hover:text-[#00ff66] hover:border-[#00ff66]/50 transition-colors"
         >
-          <Settings size={16} color="#7C8399" />
+          <Settings size={18} />
         </button>
       </div>
 
-      <div
-        className="mx-4 rounded-3xl p-5 relative overflow-hidden mb-5"
-        style={{
-          background:
-            "linear-gradient(135deg,#7C5CFC 0%,#4A3FCF 55%,#22E5C8 130%)",
-        }}
-      >
-        <div
-          className="absolute -right-6 -top-6 w-32 h-32 rounded-full"
-          style={{ background: "rgba(255,255,255,.12)" }}
-        />
-        <div className="relative">
-          <div
-            className="text-[11px] font-semibold uppercase tracking-wider"
-            style={{ color: "rgba(255,255,255,.75)" }}
-          >
-            Balans
-          </div>
-          <div
-            className="text-3xl font-extrabold mt-1"
-            style={{ color: "#fff" }}
-          >
-            ${fmt(balance)}
+      {/* BALANCE CARD */}
+      <div className="mx-4 rounded-2xl p-5 relative overflow-hidden mb-5 bg-[#12161f] border border-[#00ff66]/30 shadow-[0_0_25px_rgba(0,255,102,0.1)]">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[#00ff66]/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="relative flex justify-between items-end">
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5">
+              <Wallet size={12} className="text-[#00ff66]" /> Balans
+            </div>
+            <div className="text-3xl font-black text-white mt-1 font-mono tracking-tight">
+              ${fmt(balance)}
+            </div>
           </div>
           <button
             onClick={() => nav("balance")}
-            className="mt-4 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1"
-            style={{ background: "rgba(10,13,20,.35)", color: "#fff" }}
+            className="px-4 py-2 rounded-xl text-xs font-black bg-[#00ff66] text-black shadow-[0_0_15px_rgba(0,255,102,0.3)] hover:bg-[#00e65c] transition-all flex items-center gap-1"
           >
-            To‘ldirish <ChevronRight size={13} />
+            To‘ldirish <ChevronRight size={14} />
           </button>
         </div>
       </div>
 
-      <div
-        className="mx-4 mb-5 rounded-2xl p-4 flex items-center justify-between"
-        style={{ background: "#12151F", border: "1px solid #232838" }}
-      >
+      {/* DAILY BONUS */}
+      <div className="mx-4 mb-6 rounded-xl p-3.5 flex items-center justify-between bg-[#12161f] border border-white/5">
         <div className="flex items-center gap-3">
-          <div
-            className="w-11 h-11 rounded-xl flex items-center justify-center"
-            style={{
-              background: dailyAvailable
-                ? "linear-gradient(135deg,#FFB020,#FF3B6E)"
-                : "#1B2030",
-            }}
-          >
-            <Gift size={20} color={dailyAvailable ? "#0A0D14" : "#7C8399"} />
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${dailyAvailable ? 'bg-[#00ff66] text-black shadow-[0_0_12px_rgba(0,255,102,0.4)]' : 'bg-gray-800 text-gray-500'}`}>
+            <Gift size={20} />
           </div>
           <div>
-            <div className="text-sm font-semibold" style={{ color: "#EDEFF6" }}>
-              Kunlik bonus
+            <div className="text-xs font-bold text-white">
+              Kunlik Bonus
             </div>
-            <div className="text-[11px]" style={{ color: "#7C8399" }}>
+            <div className="text-[10px] text-gray-400">
               {dailyAvailable ? "+$0.10 tayyor" : "Ertaga qayting"}
             </div>
           </div>
@@ -725,24 +621,24 @@ function HomeScreen({
         <button
           onClick={onDaily}
           disabled={!dailyAvailable}
-          className="px-4 py-2 rounded-xl text-xs font-bold"
-          style={{
-            background: dailyAvailable ? "#22E5C8" : "#1B2030",
-            color: dailyAvailable ? "#0A0D14" : "#4B5266",
-          }}
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
+            dailyAvailable
+              ? "bg-[#00ff66] text-black hover:bg-[#00e65c]"
+              : "bg-gray-800 text-gray-500 cursor-not-allowed"
+          }`}
         >
           {dailyAvailable ? "Olish" : "Olindi"}
         </button>
       </div>
 
+      {/* CASES SECTION */}
       <div className="px-4 flex items-center justify-between mb-3">
-        <h2 className="text-sm font-bold" style={{ color: "#EDEFF6" }}>
-          Case'lar
+        <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+          <Package size={16} className="text-[#00ff66]" /> Case'lar
         </h2>
         <button
           onClick={() => nav("cases")}
-          className="text-xs font-semibold flex items-center gap-0.5"
-          style={{ color: "#7C5CFC" }}
+          className="text-xs font-extrabold text-[#00ff66] hover:underline flex items-center gap-0.5"
         >
           Barchasi <ChevronRight size={13} />
         </button>
@@ -753,9 +649,10 @@ function HomeScreen({
         ))}
       </div>
 
+      {/* TOP SKINS SECTION */}
       <div className="px-4 mt-6">
-        <h2 className="text-sm font-bold mb-3" style={{ color: "#EDEFF6" }}>
-          Top skinlar
+        <h2 className="text-sm font-black text-white uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <Sparkles size={16} className="text-[#00ff66]" /> Top Skinlar
         </h2>
         <div className="grid grid-cols-3 gap-3">
           {skins.slice(0, 3).map((s) => (
@@ -769,7 +666,7 @@ function HomeScreen({
 
 function CasesScreen({ cases, onOpenCase }) {
   return (
-    <div className="pb-24">
+    <div className="pb-28">
       <ScreenHeader title="Case'lar" sub="Ochib, noyob skinlarga ega bo‘ling" />
       <div className="px-4 flex flex-col gap-3">
         {cases.map((cs) => {
@@ -778,30 +675,23 @@ function CasesScreen({ cases, onOpenCase }) {
             <button
               key={cs.id}
               onClick={() => onOpenCase(cs)}
-              className="rounded-2xl p-4 flex items-center justify-between active:scale-[0.98] transition-transform"
-              style={{
-                background: "linear-gradient(120deg,#171B27,#12151F)",
-                border: `1px solid ${cs.color}33`,
-              }}
+              className="rounded-2xl p-4 flex items-center justify-between bg-[#12161f] border border-white/5 hover:border-[#00ff66]/40 transition-all duration-200 active:scale-[0.98] group"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-14 h-14 rounded-2xl overflow-hidden">
+              <div className="flex items-center gap-3.5">
+                <div className="w-14 h-14 rounded-xl bg-[#0a0d14] border border-white/5 flex items-center justify-center group-hover:border-[#00ff66]/30">
                   <Thumb
                     image={cs.image}
-                    color={cs.color}
-                    glow={`${cs.color}33`}
+                    color={cs.color || "#00ff66"}
+                    glow={`${cs.color || "#00ff66"}33`}
                     Icon={Icon}
-                    size={26}
+                    size={28}
                   />
                 </div>
                 <div className="text-left">
-                  <div
-                    className="text-sm font-bold"
-                    style={{ color: "#EDEFF6" }}
-                  >
+                  <div className="text-sm font-bold text-white group-hover:text-[#00ff66] transition-colors">
                     {cs.name}
                   </div>
-                  <div className="flex gap-1 mt-1.5">
+                  <div className="flex gap-1 mt-2">
                     {RARITY_ORDER.map((r) => (
                       <span
                         key={r}
@@ -810,24 +700,17 @@ function CasesScreen({ cases, onOpenCase }) {
                           background: RARITY[r].color,
                           opacity: (cs.odds?.[r] || 0) / 60 + 0.3,
                         }}
-                        title={`${r}: ${cs.odds?.[r] || 0}%`}
                       />
                     ))}
                   </div>
                 </div>
               </div>
               <div className="text-right">
-                <div
-                  className="text-sm font-extrabold"
-                  style={{ color: cs.color }}
-                >
+                <div className="text-sm font-black text-[#00ff66] font-mono">
                   ${fmt(cs.price)}
                 </div>
-                <div
-                  className="text-[10px] mt-0.5"
-                  style={{ color: "#7C8399" }}
-                >
-                  ko‘rish →
+                <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">
+                  Ko'rish →
                 </div>
               </div>
             </button>
@@ -840,26 +723,19 @@ function CasesScreen({ cases, onOpenCase }) {
 
 function EmptyState({ icon: Icon, text, sub }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-      <div
-        className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
-        style={{ background: "#12151F", border: "1px solid #232838" }}
-      >
-        <Icon size={26} color="#4B5266" />
+    <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+      <div className="w-16 h-16 rounded-2xl bg-[#12161f] border border-white/10 flex items-center justify-center mb-4 text-gray-500">
+        <Icon size={28} />
       </div>
-      <div className="text-sm font-semibold" style={{ color: "#EDEFF6" }}>
-        {text}
-      </div>
-      <div className="text-xs mt-1" style={{ color: "#7C8399" }}>
-        {sub}
-      </div>
+      <div className="text-sm font-bold text-white">{text}</div>
+      <div className="text-xs text-gray-400 mt-1">{sub}</div>
     </div>
   );
 }
 
 function InventoryScreen({ inventory, onSell }) {
   return (
-    <div className="pb-24">
+    <div className="pb-28">
       <ScreenHeader title="Inventar" sub={`${inventory.length} ta buyum`} />
       {inventory.length === 0 ? (
         <EmptyState
@@ -875,10 +751,7 @@ function InventoryScreen({ inventory, onSell }) {
               skin={s}
               onClick={() => onSell(i)}
               badge={
-                <span
-                  className="absolute top-1.5 right-1.5 text-[8px] px-1.5 py-0.5 rounded-full font-bold"
-                  style={{ background: "#0A0D1499", color: "#22E5C8" }}
-                >
+                <span className="absolute top-1.5 right-1.5 text-[8px] px-1.5 py-0.5 rounded font-black bg-[#00ff66] text-black shadow">
                   Sotish
                 </span>
               }
@@ -892,7 +765,7 @@ function InventoryScreen({ inventory, onSell }) {
 
 function MarketplaceScreen({ listings, balance, onBuy }) {
   return (
-    <div className="pb-24">
+    <div className="pb-28">
       <ScreenHeader
         title="Marketplace"
         sub="Boshqa userlar sotuvidagi skinlar"
@@ -904,10 +777,7 @@ function MarketplaceScreen({ listings, balance, onBuy }) {
               skin={l.skin}
               onClick={() => balance >= l.price && onBuy(l._id)}
             />
-            <div
-              className="absolute bottom-[38px] left-1.5 right-1.5 text-[8px] truncate"
-              style={{ color: "#4B5266" }}
-            >
+            <div className="absolute bottom-[38px] left-1.5 right-1.5 text-[8px] truncate font-bold text-gray-400">
               @{l.seller}
             </div>
           </div>
@@ -920,97 +790,67 @@ function MarketplaceScreen({ listings, balance, onBuy }) {
 function BalanceScreen({ balance, txs, onDeposit }) {
   const [amt, setAmt] = useState("10");
   return (
-    <div className="pb-24">
+    <div className="pb-28">
       <ScreenHeader title="Balans" />
-      <div
-        className="mx-4 rounded-3xl p-5 mb-5"
-        style={{
-          background: "linear-gradient(135deg,#171B27,#12151F)",
-          border: "1px solid #232838",
-        }}
-      >
-        <div
-          className="text-[11px] font-semibold uppercase tracking-wider"
-          style={{ color: "#7C8399" }}
-        >
+      <div className="mx-4 rounded-2xl p-5 mb-5 bg-[#12161f] border border-[#00ff66]/30 shadow-[0_0_20px_rgba(0,255,102,0.08)]">
+        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">
           Joriy balans
         </div>
-        <div
-          className="text-3xl font-extrabold mt-1"
-          style={{ color: "#EDEFF6" }}
-        >
+        <div className="text-3xl font-black text-white mt-1 font-mono">
           ${fmt(balance)}
         </div>
         <div className="flex gap-2 mt-4">
           <input
             value={amt}
             onChange={(e) => setAmt(e.target.value.replace(/[^0-9.]/g, ""))}
-            className="flex-1 rounded-xl px-3 py-2.5 text-sm font-semibold outline-none"
-            style={{
-              background: "#0A0D14",
-              border: "1px solid #232838",
-              color: "#EDEFF6",
-            }}
+            className="flex-1 rounded-xl px-3 py-2.5 text-sm font-bold bg-[#0a0d14] border border-white/10 text-white outline-none focus:border-[#00ff66]"
           />
           <button
             onClick={() => onDeposit(parseFloat(amt) || 0)}
-            className="px-4 rounded-xl text-xs font-bold"
-            style={{
-              background: "linear-gradient(90deg,#7C5CFC,#22E5C8)",
-              color: "#0A0D14",
-            }}
+            className="px-4 rounded-xl text-xs font-black bg-[#00ff66] text-black shadow-[0_0_15px_rgba(0,255,102,0.3)] hover:bg-[#00e65c]"
           >
             + Deposit
           </button>
         </div>
-        <p className="text-[10px] mt-2" style={{ color: "#4B5266" }}>
+        <p className="text-[10px] mt-2.5 text-gray-500 font-medium">
           Demo rejimi — virtual balans (real to‘lov ulanmagan)
         </p>
       </div>
+
       <div className="px-4 flex items-center gap-2 mb-3">
-        <History size={14} color="#7C8399" />
-        <h2 className="text-sm font-bold" style={{ color: "#EDEFF6" }}>
+        <History size={16} className="text-[#00ff66]" />
+        <h2 className="text-sm font-black text-white uppercase tracking-wider">
           Tranzaksiyalar
         </h2>
       </div>
       <div className="px-4 flex flex-col gap-2">
         {txs.length === 0 && (
-          <div className="text-xs" style={{ color: "#4B5266" }}>
+          <div className="text-xs text-gray-500">
             Hozircha tranzaksiya yo‘q
           </div>
         )}
         {txs.map((t, i) => (
           <div
             key={i}
-            className="rounded-xl px-3.5 py-3 flex items-center justify-between"
-            style={{ background: "#12151F", border: "1px solid #1B2030" }}
+            className="rounded-xl px-3.5 py-3 flex items-center justify-between bg-[#12161f] border border-white/5"
           >
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-3">
               <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{ background: t.amt > 0 ? "#22E5C822" : "#FF3B6E22" }}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                  t.amt > 0 ? "bg-[#00ff66]/10 text-[#00ff66]" : "bg-red-500/10 text-red-500"
+                }`}
               >
-                {t.amt > 0 ? (
-                  <ArrowDownRight size={14} color="#22E5C8" />
-                ) : (
-                  <ArrowUpRight size={14} color="#FF3B6E" />
-                )}
+                {t.amt > 0 ? <ArrowDownRight size={16} /> : <ArrowUpRight size={16} />}
               </div>
               <div>
-                <div
-                  className="text-xs font-semibold"
-                  style={{ color: "#EDEFF6" }}
-                >
-                  {t.label}
-                </div>
-                <div className="text-[10px]" style={{ color: "#4B5266" }}>
-                  {t.time}
-                </div>
+                <div className="text-xs font-bold text-white">{t.label}</div>
+                <div className="text-[10px] text-gray-500">{t.time}</div>
               </div>
             </div>
             <div
-              className="text-xs font-bold"
-              style={{ color: t.amt > 0 ? "#22E5C8" : "#FF3B6E" }}
+              className={`text-xs font-black font-mono ${
+                t.amt > 0 ? "text-[#00ff66]" : "text-red-500"
+              }`}
             >
               {t.amt > 0 ? "+" : ""}
               {fmt(t.amt)}
@@ -1026,100 +866,48 @@ function ProfileScreen({ user, balance, inventory, refCode, refStats }) {
   const [copied, setCopied] = useState(false);
   const link = `t.me/SkinBot?start=${refCode}`;
   return (
-    <div className="pb-24">
+    <div className="pb-28">
       <ScreenHeader title="Profil" />
-      <div
-        className="mx-4 rounded-2xl p-4 flex items-center gap-3 mb-4"
-        style={{ background: "#12151F", border: "1px solid #232838" }}
-      >
-        <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-lg"
-          style={{
-            background: "linear-gradient(135deg,#7C5CFC,#22E5C8)",
-            color: "#0A0D14",
-          }}
-        >
+      <div className="mx-4 rounded-2xl p-4 flex items-center gap-3.5 mb-4 bg-[#12161f] border border-white/5">
+        <div className="w-14 h-14 rounded-2xl bg-[#00ff66] text-black font-black text-xl flex items-center justify-center shadow-[0_0_15px_rgba(0,255,102,0.3)]">
           {user.name[0]}
         </div>
         <div>
-          <div className="text-sm font-bold" style={{ color: "#EDEFF6" }}>
-            {user.name}
-          </div>
-          <div className="text-xs" style={{ color: "#7C8399" }}>
-            @{user.username}
-          </div>
+          <div className="text-base font-extrabold text-white">{user.name}</div>
+          <div className="text-xs text-gray-400">@{user.username}</div>
         </div>
       </div>
+
       <div className="mx-4 grid grid-cols-3 gap-2 mb-5">
         {[
           ["Balans", `$${fmt(balance)}`],
           ["Skinlar", inventory.length],
           ["Case", user.opened],
         ].map(([l, v]) => (
-          <div
-            key={l}
-            className="rounded-xl p-3 text-center"
-            style={{ background: "#12151F", border: "1px solid #232838" }}
-          >
-            <div
-              className="text-sm font-extrabold"
-              style={{ color: "#EDEFF6" }}
-            >
-              {v}
-            </div>
-            <div className="text-[10px] mt-0.5" style={{ color: "#7C8399" }}>
-              {l}
-            </div>
+          <div key={l} className="rounded-xl p-3 text-center bg-[#12161f] border border-white/5">
+            <div className="text-sm font-black text-white font-mono">{v}</div>
+            <div className="text-[10px] text-gray-400 font-bold uppercase mt-0.5">{l}</div>
           </div>
         ))}
       </div>
-      <div
-        className="mx-4 rounded-2xl p-4 mb-5"
-        style={{
-          background: "linear-gradient(135deg,#171B27,#12151F)",
-          border: "1px solid #232838",
-        }}
-      >
-        <div className="flex items-center gap-2 mb-2">
-          <Users size={15} color="#7C5CFC" />
-          <span className="text-sm font-bold" style={{ color: "#EDEFF6" }}>
-            Referral
-          </span>
+
+      <div className="mx-4 rounded-2xl p-4 mb-5 bg-[#12161f] border border-[#00ff66]/20">
+        <div className="flex items-center gap-2 mb-3">
+          <Users size={16} className="text-[#00ff66]" />
+          <span className="text-sm font-black text-white uppercase tracking-wider">Referral System</span>
         </div>
-        <div className="flex gap-4 mb-3">
+        <div className="flex gap-6 mb-3">
           <div>
-            <div
-              className="text-base font-extrabold"
-              style={{ color: "#EDEFF6" }}
-            >
-              {refStats.count}
-            </div>
-            <div className="text-[10px]" style={{ color: "#7C8399" }}>
-              Taklif
-            </div>
+            <div className="text-base font-black text-white font-mono">{refStats.count}</div>
+            <div className="text-[10px] text-gray-400 uppercase font-bold">Takliflar</div>
           </div>
           <div>
-            <div
-              className="text-base font-extrabold"
-              style={{ color: "#22E5C8" }}
-            >
-              ${fmt(refStats.earned)}
-            </div>
-            <div className="text-[10px]" style={{ color: "#7C8399" }}>
-              Bonus
-            </div>
+            <div className="text-base font-black text-[#00ff66] font-mono">${fmt(refStats.earned)}</div>
+            <div className="text-[10px] text-gray-400 uppercase font-bold">Ishalangan Bonus</div>
           </div>
         </div>
-        <div
-          className="flex items-center gap-2 rounded-xl px-3 py-2.5"
-          style={{ background: "#0A0D14", border: "1px solid #232838" }}
-        >
-          <span
-            className="flex-1 text-xs truncate"
-            style={{ color: "#7C8399" }}
-          >
-            {link}
-          </span>
+        <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 bg-[#0a0d14] border border-white/10">
+          <span className="flex-1 text-xs truncate text-gray-400 font-mono">{link}</span>
           <button
             onClick={() => {
               navigator.clipboard.writeText(link).catch(() => {});
@@ -1127,11 +915,7 @@ function ProfileScreen({ user, balance, inventory, refCode, refStats }) {
               setTimeout(() => setCopied(false), 1500);
             }}
           >
-            {copied ? (
-              <Check size={15} color="#22E5C8" />
-            ) : (
-              <Copy size={15} color="#7C5CFC" />
-            )}
+            {copied ? <Check size={16} className="text-[#00ff66]" /> : <Users size={16} className="text-gray-400 hover:text-[#00ff66]" />}
           </button>
         </div>
       </div>
@@ -1145,18 +929,11 @@ function ProfileScreen({ user, balance, inventory, refCode, refStats }) {
 function NumField({ label, value, onChange }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[10px] font-semibold" style={{ color: "#7C8399" }}>
-        {label}
-      </span>
+      <span className="text-[10px] font-bold text-gray-400">{label}</span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg px-2.5 py-2 text-xs font-medium outline-none"
-        style={{
-          background: "#0A0D14",
-          border: "1px solid #232838",
-          color: "#EDEFF6",
-        }}
+        className="w-full rounded-lg px-2.5 py-2 text-xs font-medium bg-[#0a0d14] border border-white/10 text-white outline-none focus:border-[#00ff66]"
       />
     </label>
   );
@@ -1173,11 +950,8 @@ function AdminSkinForm({ onAdd, client: adminClient }) {
   const set = (key) => (val) => setF((prev) => ({ ...prev, [key]: val }));
 
   return (
-    <div
-      className="rounded-2xl p-3.5 mb-3"
-      style={{ background: "#12151F", border: "1px solid #232838" }}
-    >
-      <div className="text-xs font-bold mb-2.5" style={{ color: "#EDEFF6" }}>
+    <div className="rounded-2xl p-4 mb-4 bg-[#12161f] border border-white/10">
+      <div className="text-xs font-black uppercase text-white mb-3">
         Yangi skin qo‘shish
       </div>
       <div className="grid grid-cols-2 gap-2 mb-2">
@@ -1186,14 +960,11 @@ function AdminSkinForm({ onAdd, client: adminClient }) {
       </div>
       <div className="grid grid-cols-2 gap-2 mb-2">
         <label className="flex flex-col gap-1">
-          <span className="text-[10px] font-semibold" style={{ color: "#7C8399" }}>
-            Rarity
-          </span>
+          <span className="text-[10px] font-bold text-gray-400">Rarity</span>
           <select
             value={f.rarity}
             onChange={(e) => set("rarity")(e.target.value)}
-            className="rounded-lg px-2.5 py-2 text-xs font-medium outline-none"
-            style={{ background: "#0A0D14", border: "1px solid #232838", color: "#EDEFF6" }}
+            className="rounded-lg px-2.5 py-2 text-xs font-medium bg-[#0a0d14] border border-white/10 text-white outline-none"
           >
             {RARITY_ORDER.map((r) => (
               <option key={r} value={r}>{RARITY[r].label}</option>
@@ -1220,8 +991,7 @@ function AdminSkinForm({ onAdd, client: adminClient }) {
             alert(err.response?.data?.error || "Xatolik yuz berdi");
           }
         }}
-        className="mt-3 w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5"
-        style={{ background: "linear-gradient(90deg,#7C5CFC,#22E5C8)", color: "#0A0D14" }}
+        className="mt-3 w-full py-2.5 rounded-xl text-xs font-black bg-[#00ff66] text-black flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(0,255,102,0.3)]"
       >
         <Plus size={14} /> Skin qo‘shish
       </button>
@@ -1233,7 +1003,7 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
   const [f, setF] = useState({
     name: "",
     price: "5",
-    color: "#7C5CFC",
+    color: "#00ff66",
     image: "",
     common: "50",
     rare: "30",
@@ -1247,11 +1017,8 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
   );
 
   return (
-    <div
-      className="rounded-2xl p-3.5 mb-3"
-      style={{ background: "#12151F", border: "1px solid #232838" }}
-    >
-      <div className="text-xs font-bold mb-2.5" style={{ color: "#EDEFF6" }}>
+    <div className="rounded-2xl p-4 mb-4 bg-[#12161f] border border-white/10">
+      <div className="text-xs font-black uppercase text-white mb-3">
         Yangi case qo‘shish
       </div>
       <div className="grid grid-cols-2 gap-2 mb-2">
@@ -1259,29 +1026,23 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
         <NumField label="Narxi ($)" value={f.price} onChange={set("price")} />
       </div>
       <NumField label="Rasm URL (ixtiyoriy)" value={f.image} onChange={set("image")} />
-      <div className="mt-2.5">
+      <div className="mt-3">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[10px] font-semibold" style={{ color: "#7C8399" }}>
-            Ehtimollar (%)
-          </span>
-          <span
-            className="text-[10px] font-bold"
-            style={{ color: Math.round(sum) === 100 ? "#22E5C8" : "#FF3B6E" }}
-          >
+          <span className="text-[10px] font-bold text-gray-400">Ehtimollar (%)</span>
+          <span className={`text-[10px] font-extrabold ${Math.round(sum) === 100 ? 'text-[#00ff66]' : 'text-red-500'}`}>
             Jami: {sum.toFixed(1)}%
           </span>
         </div>
-        <div className="grid grid-cols-5 gap-1.5">
+        <div className="grid grid-cols-5 gap-1">
           {RARITY_ORDER.map((r) => (
             <label key={r} className="flex flex-col gap-1 items-center">
-              <span className="text-[8px] font-semibold" style={{ color: RARITY[r].color }}>
+              <span className="text-[8px] font-bold uppercase" style={{ color: RARITY[r].color }}>
                 {RARITY[r].label}
               </span>
               <input
                 value={f[r]}
                 onChange={(e) => set(r)(e.target.value)}
-                className="w-full text-center rounded-lg px-1 py-1.5 text-[10px] font-bold outline-none"
-                style={{ background: "#0A0D14", border: `1px solid ${RARITY[r].color}44`, color: "#EDEFF6" }}
+                className="w-full text-center rounded-lg px-1 py-1.5 text-[10px] font-bold bg-[#0a0d14] border border-white/10 text-white outline-none"
               />
             </label>
           ))}
@@ -1306,15 +1067,14 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
             });
             onAdd(norm(res.data));
             setF({
-              name: "", price: "5", color: "#7C5CFC", image: "",
+              name: "", price: "5", color: "#00ff66", image: "",
               common: "50", rare: "30", epic: "14", legend: "5", myth: "1",
             });
           } catch (err) {
             alert(err.response?.data?.error || "Xatolik yuz berdi");
           }
         }}
-        className="mt-3 w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5"
-        style={{ background: "linear-gradient(90deg,#7C5CFC,#22E5C8)", color: "#0A0D14" }}
+        className="mt-3 w-full py-2.5 rounded-xl text-xs font-black bg-[#00ff66] text-black flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(0,255,102,0.3)]"
       >
         <Plus size={14} /> Case qo‘shish
       </button>
@@ -1334,18 +1094,15 @@ function AdminScreen({ cases, skins, onAddCase, onAddSkin, onDeleteCase, onDelet
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
       style={{
-        background: "rgba(5,6,10,.85)",
         opacity: mounted ? 1 : 0,
         transition: "opacity .25s ease",
       }}
     >
       <div
-        className="w-full max-w-[380px] h-[720px] rounded-[28px] overflow-hidden flex flex-col"
+        className="w-full max-w-[380px] h-[700px] rounded-3xl overflow-hidden flex flex-col bg-[#0a0d14] border border-white/10 shadow-2xl"
         style={{
-          background: "#05060A",
-          border: "1px solid #1B2030",
           transform: mounted ? "translateY(0) scale(1)" : "translateY(16px) scale(0.98)",
           transition: "transform .28s cubic-bezier(0.16,1,0.3,1)",
         }}
@@ -1353,18 +1110,13 @@ function AdminScreen({ cases, skins, onAddCase, onAddSkin, onDeleteCase, onDelet
         <div className="flex items-center gap-2 px-4 pt-5 pb-3">
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center"
-            style={{ background: "#12151F", border: "1px solid #232838" }}
+            className="w-8 h-8 rounded-xl bg-[#12161f] border border-white/10 flex items-center justify-center text-gray-300"
           >
-            <ArrowLeft size={15} color="#7C8399" />
+            <ArrowLeft size={16} />
           </button>
           <div>
-            <div className="text-sm font-bold" style={{ color: "#EDEFF6" }}>
-              Admin panel
-            </div>
-            <div className="text-[10px]" style={{ color: "#7C8399" }}>
-              Case va skinlarni boshqarish
-            </div>
+            <div className="text-sm font-black text-white">Admin Panel</div>
+            <div className="text-[10px] text-gray-400">Boshqaruv markazi</div>
           </div>
         </div>
 
@@ -1376,15 +1128,9 @@ function AdminScreen({ cases, skins, onAddCase, onAddSkin, onDeleteCase, onDelet
             <button
               key={id}
               onClick={() => setTab(id)}
-              className="px-3.5 py-1.5 rounded-full text-[11px] font-bold"
-              style={{
-                background:
-                  tab === id
-                    ? "linear-gradient(90deg,#7C5CFC,#22E5C8)"
-                    : "#12151F",
-                color: tab === id ? "#0A0D14" : "#7C8399",
-                border: tab === id ? "none" : "1px solid #232838",
-              }}
+              className={`px-4 py-1.5 rounded-full text-xs font-black ${
+                tab === id ? "bg-[#00ff66] text-black" : "bg-[#12161f] text-gray-400 border border-white/5"
+              }`}
             >
               {l}
             </button>
@@ -1397,41 +1143,18 @@ function AdminScreen({ cases, skins, onAddCase, onAddSkin, onDeleteCase, onDelet
               <AdminCaseForm onAdd={onAddCase} client={adminClient} />
               <div className="flex flex-col gap-2">
                 {cases.map((cs) => (
-                  <div
-                    key={cs.id}
-                    className="rounded-xl px-3 py-2.5 flex items-center justify-between"
-                    style={{
-                      background: "#12151F",
-                      border: "1px solid #1B2030",
-                    }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg overflow-hidden">
-                        <Thumb
-                          image={cs.image}
-                          color={cs.color}
-                          glow={`${cs.color}44`}
-                          Icon={iconFor(cs.id)}
-                          size={16}
-                        />
+                  <div key={cs.id} className="rounded-xl p-3 flex items-center justify-between bg-[#12161f] border border-white/5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-[#0a0d14] overflow-hidden">
+                        <Thumb image={cs.image} color={cs.color || "#00ff66"} glow={`${cs.color || "#00ff66"}44`} Icon={iconFor(cs.id)} size={16} />
                       </div>
                       <div>
-                        <div
-                          className="text-xs font-semibold"
-                          style={{ color: "#EDEFF6" }}
-                        >
-                          {cs.name}
-                        </div>
-                        <div
-                          className="text-[10px]"
-                          style={{ color: "#7C8399" }}
-                        >
-                          ${fmt(cs.price)}
-                        </div>
+                        <div className="text-xs font-bold text-white">{cs.name}</div>
+                        <div className="text-[10px] font-mono text-[#00ff66]">${fmt(cs.price)}</div>
                       </div>
                     </div>
                     <button onClick={() => onDeleteCase(cs.id)}>
-                      <Trash2 size={14} color="#FF3B6E" />
+                      <Trash2 size={16} className="text-red-500 hover:text-red-400" />
                     </button>
                   </div>
                 ))}
@@ -1444,43 +1167,20 @@ function AdminScreen({ cases, skins, onAddCase, onAddSkin, onDeleteCase, onDelet
               <AdminSkinForm onAdd={onAddSkin} client={adminClient} />
               <div className="flex flex-col gap-2">
                 {skins.map((s) => {
-                  const R = RARITY[s.rarity];
+                  const R = RARITY[s.rarity] || RARITY.common;
                   return (
-                    <div
-                      key={s.id}
-                      className="rounded-xl px-3 py-2.5 flex items-center justify-between"
-                      style={{
-                        background: "#12151F",
-                        border: "1px solid #1B2030",
-                      }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg overflow-hidden">
-                          <Thumb
-                            image={s.image}
-                            color={R.color}
-                            glow={R.glow}
-                            Icon={iconFor(s.id)}
-                            size={16}
-                          />
+                    <div key={s.id} className="rounded-xl p-3 flex items-center justify-between bg-[#12161f] border border-white/5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-[#0a0d14] overflow-hidden">
+                          <Thumb image={s.image} color={R.color} glow={R.glow} Icon={iconFor(s.id)} size={16} />
                         </div>
                         <div>
-                          <div
-                            className="text-xs font-semibold"
-                            style={{ color: "#EDEFF6" }}
-                          >
-                            {s.name}
-                          </div>
-                          <div
-                            className="text-[10px]"
-                            style={{ color: R.color }}
-                          >
-                            {R.label} · ${fmt(s.price)}
-                          </div>
+                          <div className="text-xs font-bold text-white">{s.name}</div>
+                          <div className="text-[10px] font-mono" style={{ color: R.color }}>{R.label} · ${fmt(s.price)}</div>
                         </div>
                       </div>
                       <button onClick={() => onDeleteSkin(s.id)}>
-                        <Trash2 size={14} color="#FF3B6E" />
+                        <Trash2 size={16} className="text-red-500 hover:text-red-400" />
                       </button>
                     </div>
                   );
@@ -1600,10 +1300,7 @@ export default function App() {
           await client.post("/referral/bind", { refCode });
         }
       } catch (err) {
-        console.log(
-          "Referral bind o'tkazib yuborildi:",
-          err.response?.data?.error || err.message,
-        );
+        console.log("Referral bind o'tkazib yuborildi:", err.response?.data?.error || err.message);
       }
 
       setLoaded(true);
@@ -1696,11 +1393,8 @@ export default function App() {
 
   if (!loaded) {
     return (
-      <div
-        className="w-full min-h-[680px] flex items-center justify-center"
-        style={{ background: "#05060A" }}
-      >
-        <div className="text-sm font-semibold" style={{ color: "#7C8399" }}>
+      <div className="w-full min-h-screen bg-[#07090e] flex items-center justify-center">
+        <div className="text-sm font-black text-[#00ff66] animate-pulse uppercase tracking-widest">
           Yuklanmoqda...
         </div>
       </div>
@@ -1708,24 +1402,16 @@ export default function App() {
   }
 
   return (
-    <div
-      className="w-full min-h-[680px] flex items-center justify-center"
-      style={{ background: "#05060A" }}
-    >
+    <div className="w-full min-h-screen bg-[#07090e] flex items-center justify-center p-0 md:p-4">
       <style>{`
         @keyframes dropIn { 0% { opacity:0; transform:scale(.6) translateY(10px);} 60% { opacity:1; transform:scale(1.06) translateY(0);} 100% { transform:scale(1); opacity:1; } }
-        @keyframes flashOut { 0% { opacity:.3; } 100% { opacity:0; } }
       `}</style>
-      <div
-        className="w-full max-w-[380px] h-[720px] relative overflow-hidden"
-        style={{
-          background: "#05060A",
-          borderRadius: 28,
-          border: "1px solid #1B2030",
-          fontFamily: "-apple-system, 'Segoe UI', Inter, Roboto, sans-serif",
-        }}
-      >
-        <div className="h-full overflow-y-auto">
+      
+      {/* MOBILE FRAME WRAPPER */}
+      <div className="w-full max-w-[400px] h-[100vh] md:h-[750px] relative overflow-hidden bg-[#0a0d14] md:rounded-[32px] border-0 md:border md:border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col font-sans">
+        
+        {/* MAIN CONTENT AREA */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
           {viewingCase ? (
             <CaseDetailScreen
               cs={viewingCase}
@@ -1784,16 +1470,9 @@ export default function App() {
           )}
         </div>
 
-        <div
-          className="absolute bottom-0 left-0 right-0 px-3 pb-3 pt-2"
-          style={{
-            background: "linear-gradient(180deg, transparent, #05060A 30%)",
-          }}
-        >
-          <div
-            className="rounded-2xl flex items-center justify-around py-2"
-            style={{ background: "#12151Fee", border: "1px solid #232838" }}
-          >
+        {/* BOTTOM NAVIGATION BAR */}
+        <div className="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-[#0a0d14] via-[#0a0d14]/90 to-transparent pointer-events-none">
+          <div className="rounded-2xl bg-[#12161f]/95 border border-white/10 backdrop-blur-md flex items-center justify-around py-2.5 shadow-[0_0_20px_rgba(0,0,0,0.5)] pointer-events-auto">
             {NAV.map((n) => {
               const Icon = n.icon;
               const active = tab === n.id && !viewingCase;
@@ -1801,22 +1480,21 @@ export default function App() {
                 <button
                   key={n.id}
                   onClick={() => goTab(n.id)}
-                  className="flex flex-col items-center gap-0.5 px-2 py-1 relative"
+                  className="flex flex-col items-center gap-1 px-3 py-1 relative group"
                 >
                   {active && (
-                    <div
-                      className="absolute -top-2 w-1 h-1 rounded-full"
-                      style={{ background: "#7C5CFC" }}
-                    />
+                    <div className="absolute -top-2 w-2 h-1 bg-[#00ff66] rounded-full shadow-[0_0_8px_#00ff66]" />
                   )}
                   <Icon
-                    size={19}
-                    color={active ? "#7C5CFC" : "#4B5266"}
-                    strokeWidth={active ? 2.4 : 1.8}
+                    size={20}
+                    className={`transition-colors ${
+                      active ? "text-[#00ff66]" : "text-gray-500 group-hover:text-gray-300"
+                    }`}
                   />
                   <span
-                    className="text-[9px] font-semibold"
-                    style={{ color: active ? "#EDEFF6" : "#4B5266" }}
+                    className={`text-[9px] font-extrabold uppercase tracking-wider ${
+                      active ? "text-white" : "text-gray-500"
+                    }`}
                   >
                     {n.label}
                   </span>
@@ -1826,20 +1504,16 @@ export default function App() {
           </div>
         </div>
 
+        {/* ADMIN CHECKING MODAL */}
         {adminChecking && (
-          <div
-            className="fixed inset-0 z-[60] flex items-center justify-center"
-            style={{ background: "rgba(5,6,10,.6)" }}
-          >
-            <div
-              className="px-4 py-3 rounded-xl text-xs font-semibold"
-              style={{ background: "#12151F", color: "#7C8399", border: "1px solid #232838" }}
-            >
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="px-5 py-3 rounded-xl text-xs font-black text-[#00ff66] bg-[#12161f] border border-[#00ff66]/30 shadow-2xl animate-pulse">
               Tekshirilmoqda...
             </div>
           </div>
         )}
 
+        {/* ADMIN PANEL OVERLAY */}
         {showAdmin && (
           <AdminScreen
             cases={cases}
