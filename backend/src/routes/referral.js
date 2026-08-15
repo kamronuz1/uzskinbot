@@ -4,7 +4,7 @@ const telegramAuth = require('../middleware/telegramAuth');
 const Referral = require('../models/Referral');
 const User = require('../models/User');
 
-const REF_BONUS = 0.50;
+const REF_BONUS = 5;
 
 router.post('/bind', telegramAuth, async (req, res) => {
   const { refCode } = req.body;
