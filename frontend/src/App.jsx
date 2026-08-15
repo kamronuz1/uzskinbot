@@ -33,13 +33,11 @@ import {
   BarChart3,
   RefreshCw,
   Edit,
-  X,
-  Layers,
-  Percent
+  X
 } from "lucide-react";
 
 /* ---------------------------------------------------------------
-   TOKENS & RARITY (NEON GAMING STYLE)
+   TOKENS & RARITY
 ----------------------------------------------------------------*/
 const RARITY = {
   common: {
@@ -172,7 +170,7 @@ function SkinCard({ skin, onClick, badge, size = "md" }) {
 }
 
 /* ---------------------------------------------------------------
-   PROFESSIONAL CS2 ROULETTE REEL ANIMATION
+   ROULETTE REEL ANIMATION
 ----------------------------------------------------------------*/
 function MiniReel({ skins, winner, height, itemWidth, onDone }) {
   const containerRef = useRef(null);
@@ -972,7 +970,7 @@ function ProfileScreen({ user, balance, inventory, refCode, refStats }) {
               ${fmt(refStats.earned)}
             </div>
             <div className="text-[10px] text-gray-400 uppercase font-bold">
-              Ishalangan Bonus
+              Ishlangan Bonus
             </div>
           </div>
         </div>
@@ -1000,7 +998,7 @@ function ProfileScreen({ user, balance, inventory, refCode, refStats }) {
 }
 
 /* ---------------------------------------------------------------
-   EXTENDED FULL ADMIN PANEL (REFINED CRUD & MODALS)
+   EXTENDED ADMIN PANEL & COMPACT ROW LAYOUTS
 ----------------------------------------------------------------*/
 function NumField({ label, value, onChange, placeholder = "" }) {
   return (
@@ -1016,7 +1014,7 @@ function NumField({ label, value, onChange, placeholder = "" }) {
   );
 }
 
-/* SKIN MODAL (CREATE / EDIT) */
+/* SKIN MODAL */
 function SkinModal({ isOpen, onClose, skin, onSave }) {
   const [f, setF] = useState({
     name: "",
@@ -1096,7 +1094,7 @@ function SkinModal({ isOpen, onClose, skin, onSave }) {
   );
 }
 
-/* CASE MODAL (CREATE / EDIT) */
+/* CASE MODAL */
 function CaseModal({ isOpen, onClose, cs, onSave }) {
   const [f, setF] = useState({
     name: "",
@@ -1224,7 +1222,8 @@ function AdminUsersTab({ client: adminClient }) {
     setErrorMsg("");
     try {
       const res = await adminClient.get("/admin/users");
-      setUsers(res.data || []);
+      const list = Array.isArray(res.data) ? res.data : (res.data.users || res.data.data || []);
+      setUsers(list);
     } catch (err) {
       setErrorMsg("Foydalanuvchilar ro'yxatini yuklashda xatolik yuz berdi");
       setUsers([]);
@@ -1254,9 +1253,9 @@ function AdminUsersTab({ client: adminClient }) {
 
   const handleToggleBan = async (userId, currentStatus) => {
     try {
-      await adminClient.patch(`/admin/users/${userId}/ban`, { isBanned: !currentStatus });
+      await adminClient.patch(`/admin/users/${userId}/ban`, { isBlocked: !currentStatus });
       setUsers((prev) =>
-        prev.map((u) => (u._id === userId ? { ...u, isBanned: !currentStatus } : u))
+        prev.map((u) => (u._id === userId ? { ...u, isBlocked: !currentStatus } : u))
       );
     } catch (err) {
       alert("Foydalanuvchi holatini o'zgartirib bo'lmadi");
@@ -1320,6 +1319,11 @@ function AdminUsersTab({ client: adminClient }) {
                       ADMIN
                     </span>
                   )}
+                  {u.isBlocked && (
+                    <span className="text-[8px] bg-red-500/20 text-red-400 font-black px-1 rounded">
+                      BLOKLANGAN
+                    </span>
+                  )}
                 </div>
                 <div className="text-[10px] text-gray-400 font-mono truncate">
                   @{u.username || "no_user"} ·{" "}
@@ -1337,13 +1341,13 @@ function AdminUsersTab({ client: adminClient }) {
                 <Edit size={13} />
               </button>
               <button
-                onClick={() => handleToggleBan(u._id, u.isBanned)}
-                className={`p-1.5 rounded-lg border ${
-                  u.isBanned
+                onClick={() => handleToggleBan(u._id, u.isBlocked)}
+                className={`p-1.5 rounded-lg border transition-colors ${
+                  u.isBlocked
                     ? "bg-red-500/20 text-red-400 border-red-500/30"
                     : "bg-[#0a0d14] border-white/10 text-gray-400 hover:text-red-400"
                 }`}
-                title={u.isBanned ? "Blokdan chiqarish" : "Bloklash"}
+                title={u.isBlocked ? "Blokdan chiqarish" : "Bloklash"}
               >
                 <Ban size={13} />
               </button>
@@ -1396,7 +1400,7 @@ function AdminStatsTab({ casesCount, skinsCount }) {
   );
 }
 
-/* MAIN ADMIN SCREEN WITH BEAUTIFIED CRUD MODALS & CARDS */
+/* MAIN ADMIN SCREEN WITH COMPACT SINGLE ROW SKINS LIST */
 function AdminScreen({
   cases,
   skins,
@@ -1577,70 +1581,66 @@ function AdminScreen({
             </div>
           )}
 
+          {/* SINGLE-ROW COMPACT SKINS LIST WITHOUT IMAGES */}
           {tab === "skins" && (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               <button
                 onClick={() => {
                   setEditingSkin(null);
                   setSkinModalOpen(true);
                 }}
-                className="w-full py-3 rounded-xl text-xs font-black bg-[#00ff66] text-black flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,255,102,0.3)] hover:bg-[#00e65c] transition-all"
+                className="w-full py-2.5 rounded-xl text-xs font-black bg-[#00ff66] text-black flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,255,102,0.3)] hover:bg-[#00e65c] transition-all mb-1"
               >
-                <Plus size={16} /> Yangi Skin Qo'shish
+                <Plus size={15} /> Yangi Skin Qo'shish
               </button>
 
-              <div className="grid grid-cols-2 gap-2.5 mt-1">
+              <div className="flex flex-col gap-1.5">
                 {skins.map((s) => {
                   const R = RARITY[s.rarity] || RARITY.common;
                   return (
                     <div
                       key={s.id}
-                      className="rounded-xl p-3 bg-[#12161f] border border-white/5 flex flex-col justify-between gap-2 relative group hover:border-[#00ff66]/30 transition-all"
+                      className="rounded-xl px-3 py-2 bg-[#12161f] border border-white/5 flex items-center justify-between gap-2 hover:border-[#00ff66]/30 transition-all"
                     >
-                      <div
-                        className="w-full h-20 rounded-lg flex items-center justify-center p-2 relative overflow-hidden"
-                        style={{ background: R.bg }}
-                      >
-                        <Thumb
-                          image={s.image}
-                          color={R.color}
-                          glow={R.glow}
-                          Icon={iconFor(s.id)}
-                          size={32}
+                      <div className="flex items-center gap-2 truncate min-w-0">
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ background: R.color, boxShadow: `0 0 6px ${R.glow}` }}
                         />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-white truncate">
+                        <div className="truncate text-xs font-bold text-white">
                           {s.name}
                         </div>
-                        <div className="flex items-center justify-between mt-1">
-                          <span
-                            className="text-[8px] uppercase tracking-wider font-extrabold px-1 py-0.5 rounded bg-black/50"
-                            style={{ color: R.color }}
-                          >
-                            {R.label}
-                          </span>
-                          <span className="text-xs font-black font-mono text-[#00ff66]">
-                            ${fmt(s.price)}
-                          </span>
-                        </div>
+                        <span
+                          className="text-[8px] uppercase font-extrabold px-1.5 py-0.5 rounded bg-black/40 shrink-0"
+                          style={{ color: R.color }}
+                        >
+                          {R.label}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-1.5 pt-1 border-t border-white/5">
-                        <button
-                          onClick={() => {
-                            setEditingSkin(s);
-                            setSkinModalOpen(true);
-                          }}
-                          className="flex-1 py-1.5 rounded-lg bg-[#0a0d14] text-gray-300 hover:text-[#00ff66] flex items-center justify-center border border-white/5"
-                        >
-                          <Edit size={12} />
-                        </button>
-                        <button
-                          onClick={() => onDeleteSkin(s.id)}
-                          className="flex-1 py-1.5 rounded-lg bg-[#0a0d14] text-red-500 hover:text-red-400 flex items-center justify-center border border-white/5"
-                        >
-                          <Trash2 size={12} />
-                        </button>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs font-black font-mono text-[#00ff66]">
+                          ${fmt(s.price)}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => {
+                              setEditingSkin(s);
+                              setSkinModalOpen(true);
+                            }}
+                            className="p-1.5 rounded-lg bg-[#0a0d14] text-gray-300 hover:text-[#00ff66] border border-white/5 transition-colors"
+                            title="Tahrirlash"
+                          >
+                            <Edit size={12} />
+                          </button>
+                          <button
+                            onClick={() => onDeleteSkin(s.id)}
+                            className="p-1.5 rounded-lg bg-[#0a0d14] text-red-500 hover:text-red-400 border border-white/5 transition-colors"
+                            title="O'chirish"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );

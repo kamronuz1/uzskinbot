@@ -1,13 +1,51 @@
-// backend/src/routes/admin.js
 const express = require('express');
 const router = express.Router();
 const Case = require('../models/Case');
 const Skin = require('../models/Skin');
+const User = require('../models/User');
 const adminAuth = require('../middleware/adminAuth');
 
 router.use(adminAuth);
 
 router.get('/verify', (req, res) => res.json({ ok: true }));
+
+// --- USERS MANAGEMENT ---
+router.get('/users', async (req, res) => {
+  try {
+    const users = await User.find().sort({ createdAt: -1 });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.patch('/users/:id/ban', async (req, res) => {
+  try {
+    const { isBlocked } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { isBlocked: !!isBlocked },
+      { new: true }
+    );
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.patch('/users/:id/balance', async (req, res) => {
+  try {
+    const { balance } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { balance },
+      { new: true }
+    );
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // --- CASES CRUD ---
 router.get('/cases', async (req, res) => {
