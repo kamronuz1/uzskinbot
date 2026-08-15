@@ -33,16 +33,9 @@ async function telegramAuth(req, res, next) {
   try {
     const initData = req.headers['x-telegram-init-data'];
 
-    console.log("----------------------------------------");
-    console.log("Kelgan initData:", initData);
-    console.log("BOT_TOKEN mavjudmi:", !!process.env.BOT_TOKEN);
-
     if (!initData) return res.status(401).json({ error: 'initData yo‘q' });
 
     const isValid = checkTelegramAuth(initData, process.env.BOT_TOKEN);
-    console.log("Validatsiya natijasi (isValid):", isValid);
-    console.log("----------------------------------------");
-
     if (!isValid) return res.status(401).json({ error: 'Noto‘g‘ri initData' });
 
     const urlParams = new URLSearchParams(initData);
@@ -50,7 +43,10 @@ async function telegramAuth(req, res, next) {
     if (!userJson) return res.status(401).json({ error: 'User topilmadi' });
     const tgUser = JSON.parse(userJson);
 
-    const refCode = urlParams.get('start_param') || req.query.ref || req.body.ref;
+    // Xavfsiz tarzda o'qish uchun tekshiruv qo'shildi
+    const refCode = urlParams.get('start_param') || 
+                    (req.query && req.query.ref) || 
+                    (req.body && req.body.ref);
 
     let user = await User.findOne({ telegramId: String(tgUser.id) });
 
