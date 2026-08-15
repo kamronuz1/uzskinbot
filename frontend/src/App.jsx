@@ -920,7 +920,7 @@ function BalanceScreen({ balance, txs, onDeposit }) {
 
 function ProfileScreen({ user, balance, inventory, refCode, refStats }) {
   const [copied, setCopied] = useState(false);
-  const link = `t.me/SkinBot?start=${refCode}`;
+  const link = `t.me/UzSkinBot?start=${refCode}`;
   return (
     <div className="pb-28">
       <ScreenHeader title="Profil" />
