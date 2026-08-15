@@ -32,7 +32,10 @@ import {
   Search,
   BarChart3,
   RefreshCw,
-  Edit2
+  Edit,
+  X,
+  Layers,
+  Percent
 } from "lucide-react";
 
 /* ---------------------------------------------------------------
@@ -997,22 +1000,24 @@ function ProfileScreen({ user, balance, inventory, refCode, refStats }) {
 }
 
 /* ---------------------------------------------------------------
-   EXTENDED FULL ADMIN PANEL & COMPONENTS
+   EXTENDED FULL ADMIN PANEL (REFINED CRUD & MODALS)
 ----------------------------------------------------------------*/
-function NumField({ label, value, onChange }) {
+function NumField({ label, value, onChange, placeholder = "" }) {
   return (
     <label className="flex flex-col gap-1">
       <span className="text-[10px] font-bold text-gray-400">{label}</span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg px-2.5 py-2 text-xs font-medium bg-[#0a0d14] border border-white/10 text-white outline-none focus:border-[#00ff66]"
+        placeholder={placeholder}
+        className="w-full rounded-xl px-3 py-2 text-xs font-medium bg-[#0a0d14] border border-white/10 text-white outline-none focus:border-[#00ff66]"
       />
     </label>
   );
 }
 
-function AdminSkinForm({ onAdd, client: adminClient }) {
+/* SKIN MODAL (CREATE / EDIT) */
+function SkinModal({ isOpen, onClose, skin, onSave }) {
   const [f, setF] = useState({
     name: "",
     type: "Miltiq",
@@ -1020,65 +1025,79 @@ function AdminSkinForm({ onAdd, client: adminClient }) {
     price: "1",
     image: "",
   });
+
+  useEffect(() => {
+    if (skin) {
+      setF({
+        name: skin.name || "",
+        type: skin.type || "Miltiq",
+        rarity: skin.rarity || "common",
+        price: skin.price?.toString() || "1",
+        image: skin.image || "",
+      });
+    } else {
+      setF({ name: "", type: "Miltiq", rarity: "common", price: "1", image: "" });
+    }
+  }, [skin, isOpen]);
+
+  if (!isOpen) return null;
+
   const set = (key) => (val) => setF((prev) => ({ ...prev, [key]: val }));
 
   return (
-    <div className="rounded-2xl p-4 mb-4 bg-[#12161f] border border-white/10">
-      <div className="text-xs font-black uppercase text-white mb-3">
-        Yangi skin qo‘shish
-      </div>
-      <div className="grid grid-cols-2 gap-2 mb-2">
-        <NumField label="Nomi" value={f.name} onChange={set("name")} />
-        <NumField label="Turi" value={f.type} onChange={set("type")} />
-      </div>
-      <div className="grid grid-cols-2 gap-2 mb-2">
-        <label className="flex flex-col gap-1">
-          <span className="text-[10px] font-bold text-gray-400">Rarity</span>
-          <select
-            value={f.rarity}
-            onChange={(e) => set("rarity")(e.target.value)}
-            className="rounded-lg px-2.5 py-2 text-xs font-medium bg-[#0a0d14] border border-white/10 text-white outline-none"
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+      <div className="w-full max-w-[340px] rounded-2xl p-5 bg-[#12161f] border border-[#00ff66]/30 shadow-2xl relative animate-[dropIn_.25s_ease-out]">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-white"
+        >
+          <X size={18} />
+        </button>
+        <div className="text-sm font-black uppercase text-white mb-4 flex items-center gap-1.5">
+          <Sword size={16} className="text-[#00ff66]" />
+          {skin ? "Skinni Tahrirlash" : "Yangi Skin Qo'shish"}
+        </div>
+        <div className="flex flex-col gap-2.5">
+          <NumField label="Nomi" value={f.name} onChange={set("name")} placeholder="AK-47 | Redline" />
+          <div className="grid grid-cols-2 gap-2">
+            <NumField label="Turi" value={f.type} onChange={set("type")} />
+            <NumField label="Narxi ($)" value={f.price} onChange={set("price")} />
+          </div>
+          <label className="flex flex-col gap-1">
+            <span className="text-[10px] font-bold text-gray-400">Rarity</span>
+            <select
+              value={f.rarity}
+              onChange={(e) => set("rarity")(e.target.value)}
+              className="rounded-xl px-3 py-2 text-xs font-medium bg-[#0a0d14] border border-white/10 text-white outline-none"
+            >
+              {RARITY_ORDER.map((r) => (
+                <option key={r} value={r}>
+                  {RARITY[r].label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <NumField label="Rasm URL" value={f.image} onChange={set("image")} placeholder="https://..." />
+          <button
+            onClick={() => {
+              if (!f.name.trim()) return alert("Nomini kiriting!");
+              onSave({
+                ...f,
+                price: parseFloat(f.price) || 0,
+              });
+            }}
+            className="mt-3 w-full py-3 rounded-xl text-xs font-black bg-[#00ff66] text-black shadow-[0_0_15px_rgba(0,255,102,0.3)] hover:bg-[#00e65c] transition-all"
           >
-            {RARITY_ORDER.map((r) => (
-              <option key={r} value={r}>
-                {RARITY[r].label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <NumField label="Narxi ($)" value={f.price} onChange={set("price")} />
+            {skin ? "Saqlash" : "Qo'shish"}
+          </button>
+        </div>
       </div>
-      <NumField
-        label="Rasm URL (ixtiyoriy)"
-        value={f.image}
-        onChange={set("image")}
-      />
-      <button
-        onClick={async () => {
-          if (!f.name.trim()) return;
-          try {
-            const res = await adminClient.post("/admin/skins", {
-              name: f.name,
-              type: f.type,
-              rarity: f.rarity,
-              price: parseFloat(f.price) || 0,
-              image: f.image,
-            });
-            onAdd(norm(res.data));
-            setF({ name: "", type: "Miltiq", rarity: "common", price: "1", image: "" });
-          } catch (err) {
-            alert(err.response?.data?.error || "Xatolik yuz berdi");
-          }
-        }}
-        className="mt-3 w-full py-2.5 rounded-xl text-xs font-black bg-[#00ff66] text-black flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(0,255,102,0.3)]"
-      >
-        <Plus size={14} /> Skin qo‘shish
-      </button>
     </div>
   );
 }
 
-function AdminCaseForm({ onAdd, client: adminClient }) {
+/* CASE MODAL (CREATE / EDIT) */
+function CaseModal({ isOpen, onClose, cs, onSave }) {
   const [f, setF] = useState({
     name: "",
     price: "5",
@@ -1090,6 +1109,37 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
     legend: "5",
     myth: "1",
   });
+
+  useEffect(() => {
+    if (cs) {
+      setF({
+        name: cs.name || "",
+        price: cs.price?.toString() || "5",
+        color: cs.color || "#00ff66",
+        image: cs.image || "",
+        common: cs.odds?.common?.toString() || "50",
+        rare: cs.odds?.rare?.toString() || "30",
+        epic: cs.odds?.epic?.toString() || "14",
+        legend: cs.odds?.legend?.toString() || "5",
+        myth: cs.odds?.myth?.toString() || "1",
+      });
+    } else {
+      setF({
+        name: "",
+        price: "5",
+        color: "#00ff66",
+        image: "",
+        common: "50",
+        rare: "30",
+        epic: "14",
+        legend: "5",
+        myth: "1",
+      });
+    }
+  }, [cs, isOpen]);
+
+  if (!isOpen) return null;
+
   const set = (key) => (val) => setF((prev) => ({ ...prev, [key]: val }));
   const sum = ["common", "rare", "epic", "legend", "myth"].reduce(
     (a, r) => a + (parseFloat(f[r]) || 0),
@@ -1097,108 +1147,87 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
   );
 
   return (
-    <div className="rounded-2xl p-4 mb-4 bg-[#12161f] border border-white/10">
-      <div className="text-xs font-black uppercase text-white mb-3">
-        Yangi case qo‘shish
-      </div>
-      <div className="grid grid-cols-2 gap-2 mb-2">
-        <NumField label="Nomi" value={f.name} onChange={set("name")} />
-        <NumField label="Narxi ($)" value={f.price} onChange={set("price")} />
-      </div>
-      <NumField
-        label="Rasm URL (ixtiyoriy)"
-        value={f.image}
-        onChange={set("image")}
-      />
-      <div className="mt-3">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[10px] font-bold text-gray-400">
-            Ehtimollar (%)
-          </span>
-          <span
-            className={`text-[10px] font-extrabold ${
-              Math.round(sum) === 100 ? "text-[#00ff66]" : "text-red-500"
-            }`}
-          >
-            Jami: {sum.toFixed(1)}%
-          </span>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+      <div className="w-full max-w-[340px] rounded-2xl p-5 bg-[#12161f] border border-[#00ff66]/30 shadow-2xl relative animate-[dropIn_.25s_ease-out]">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-white"
+        >
+          <X size={18} />
+        </button>
+        <div className="text-sm font-black uppercase text-white mb-4 flex items-center gap-1.5">
+          <Package size={16} className="text-[#00ff66]" />
+          {cs ? "Caseni Tahrirlash" : "Yangi Case Qo'shish"}
         </div>
-        <div className="grid grid-cols-5 gap-1">
-          {RARITY_ORDER.map((r) => (
-            <label key={r} className="flex flex-col gap-1 items-center">
-              <span
-                className="text-[8px] font-bold uppercase"
-                style={{ color: RARITY[r].color }}
-              >
-                {RARITY[r].label}
+        <div className="flex flex-col gap-2.5">
+          <NumField label="Nomi" value={f.name} onChange={set("name")} placeholder="Weapon Case #1" />
+          <NumField label="Narxi ($)" value={f.price} onChange={set("price")} />
+          <NumField label="Rasm URL" value={f.image} onChange={set("image")} placeholder="https://..." />
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-bold text-gray-400">Ehtimollar (%)</span>
+              <span className={`text-[10px] font-extrabold ${Math.round(sum) === 100 ? "text-[#00ff66]" : "text-red-500"}`}>
+                Jami: {sum.toFixed(1)}%
               </span>
-              <input
-                value={f[r]}
-                onChange={(e) => set(r)(e.target.value)}
-                className="w-full text-center rounded-lg px-1 py-1.5 text-[10px] font-bold bg-[#0a0d14] border border-white/10 text-white outline-none"
-              />
-            </label>
-          ))}
+            </div>
+            <div className="grid grid-cols-5 gap-1">
+              {RARITY_ORDER.map((r) => (
+                <label key={r} className="flex flex-col gap-1 items-center">
+                  <span className="text-[8px] font-bold uppercase" style={{ color: RARITY[r].color }}>
+                    {RARITY[r].label}
+                  </span>
+                  <input
+                    value={f[r]}
+                    onChange={(e) => set(r)(e.target.value)}
+                    className="w-full text-center rounded-lg py-1.5 text-[10px] font-bold bg-[#0a0d14] border border-white/10 text-white outline-none"
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              if (!f.name.trim()) return alert("Nomini kiriting!");
+              onSave({
+                name: f.name,
+                price: parseFloat(f.price) || 0,
+                color: f.color,
+                image: f.image,
+                odds: {
+                  common: +f.common || 0,
+                  rare: +f.rare || 0,
+                  epic: +f.epic || 0,
+                  legend: +f.legend || 0,
+                  myth: +f.myth || 0,
+                },
+              });
+            }}
+            className="mt-3 w-full py-3 rounded-xl text-xs font-black bg-[#00ff66] text-black shadow-[0_0_15px_rgba(0,255,102,0.3)] hover:bg-[#00e65c] transition-all"
+          >
+            {cs ? "Saqlash" : "Qo'shish"}
+          </button>
         </div>
       </div>
-      <button
-        onClick={async () => {
-          if (!f.name.trim()) return;
-          try {
-            const res = await adminClient.post("/admin/cases", {
-              name: f.name,
-              price: parseFloat(f.price) || 0,
-              color: f.color,
-              image: f.image,
-              odds: {
-                common: +f.common || 0,
-                rare: +f.rare || 0,
-                epic: +f.epic || 0,
-                legend: +f.legend || 0,
-                myth: +f.myth || 0,
-              },
-            });
-            onAdd(norm(res.data));
-            setF({
-              name: "",
-              price: "5",
-              color: "#00ff66",
-              image: "",
-              common: "50",
-              rare: "30",
-              epic: "14",
-              legend: "5",
-              myth: "1",
-            });
-          } catch (err) {
-            alert(err.response?.data?.error || "Xatolik yuz berdi");
-          }
-        }}
-        className="mt-3 w-full py-2.5 rounded-xl text-xs font-black bg-[#00ff66] text-black flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(0,255,102,0.3)]"
-      >
-        <Plus size={14} /> Case qo‘shish
-      </button>
     </div>
   );
 }
 
-/* Admin Tizimidagi Userlar Boshqaruvi Moduli */
+/* REAL TELEGRAM USERS TAB */
 function AdminUsersTab({ client: adminClient }) {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const fetchUsers = async () => {
     setLoading(true);
+    setErrorMsg("");
     try {
       const res = await adminClient.get("/admin/users");
       setUsers(res.data || []);
     } catch (err) {
-      // Zaxira demo ma'lumotlar API mavjud bo'lmaganda
-      setUsers([
-        { _id: "1", firstName: "Ali", username: "ali_dev", balance: 120.5, isBanned: false, isAdmin: false },
-        { _id: "2", firstName: "Vali", username: "vali_pro", balance: 15.0, isBanned: true, isAdmin: false },
-      ]);
+      setErrorMsg("Foydalanuvchilar ro'yxatini yuklashda xatolik yuz berdi");
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -1208,8 +1237,8 @@ function AdminUsersTab({ client: adminClient }) {
     fetchUsers();
   }, []);
 
-  const handleUpdateBalance = async (userId) => {
-    const val = prompt("Yangi balansni kiriting ($):");
+  const handleUpdateBalance = async (userId, currentBal) => {
+    const val = prompt("Yangi balansni kiriting ($):", currentBal);
     if (val === null) return;
     const amount = parseFloat(val);
     if (isNaN(amount)) return alert("Noto'g'ri qiymat!");
@@ -1237,7 +1266,8 @@ function AdminUsersTab({ client: adminClient }) {
   const filteredUsers = users.filter(
     (u) =>
       (u.firstName || "").toLowerCase().includes(search.toLowerCase()) ||
-      (u.username || "").toLowerCase().includes(search.toLowerCase())
+      (u.username || "").toLowerCase().includes(search.toLowerCase()) ||
+      (u.telegramId || "").toString().includes(search)
   );
 
   return (
@@ -1248,7 +1278,7 @@ function AdminUsersTab({ client: adminClient }) {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="User qidirish..."
+            placeholder="User / Telegram ID qidirish..."
             className="w-full pl-8 pr-3 py-2 text-xs rounded-xl bg-[#12161f] border border-white/10 text-white outline-none focus:border-[#00ff66]"
           />
         </div>
@@ -1260,11 +1290,23 @@ function AdminUsersTab({ client: adminClient }) {
         </button>
       </div>
 
+      {errorMsg && (
+        <div className="text-xs font-bold text-red-500 bg-red-500/10 p-2.5 rounded-xl border border-red-500/20 text-center">
+          {errorMsg}
+        </div>
+      )}
+
+      {filteredUsers.length === 0 && !loading && !errorMsg && (
+        <div className="text-xs text-gray-500 text-center py-8">
+          Foydalanuvchilar topilmadi
+        </div>
+      )}
+
       <div className="flex flex-col gap-2">
         {filteredUsers.map((u) => (
           <div
             key={u._id}
-            className="rounded-xl p-3 bg-[#12161f] border border-white/5 flex items-center justify-between gap-2"
+            className="rounded-xl p-3 bg-[#12161f] border border-white/5 flex items-center justify-between gap-2 hover:border-white/10 transition-colors"
           >
             <div className="flex items-center gap-2.5 overflow-hidden">
               <div className="w-8 h-8 rounded-lg bg-[#0a0d14] font-black text-xs text-[#00ff66] flex items-center justify-center shrink-0 border border-white/5">
@@ -1272,7 +1314,7 @@ function AdminUsersTab({ client: adminClient }) {
               </div>
               <div className="truncate">
                 <div className="text-xs font-bold text-white flex items-center gap-1.5 truncate">
-                  {u.firstName || "Foydalanuvchi"}
+                  {u.firstName || "Telegram User"}
                   {u.isAdmin && (
                     <span className="text-[8px] bg-[#00ff66]/20 text-[#00ff66] font-black px-1 rounded">
                       ADMIN
@@ -1288,11 +1330,11 @@ function AdminUsersTab({ client: adminClient }) {
 
             <div className="flex items-center gap-1 shrink-0">
               <button
-                onClick={() => handleUpdateBalance(u._id)}
+                onClick={() => handleUpdateBalance(u._id, u.balance)}
                 className="p-1.5 rounded-lg bg-[#0a0d14] border border-white/10 text-gray-300 hover:text-[#00ff66]"
                 title="Balansni o'zgartirish"
               >
-                <Edit2 size={13} />
+                <Edit size={13} />
               </button>
               <button
                 onClick={() => handleToggleBan(u._id, u.isBanned)}
@@ -1313,7 +1355,6 @@ function AdminUsersTab({ client: adminClient }) {
   );
 }
 
-/* Admin Analitika va Tizim Ko'rsatkichlari */
 function AdminStatsTab({ casesCount, skinsCount }) {
   return (
     <div className="flex flex-col gap-3">
@@ -1355,25 +1396,68 @@ function AdminStatsTab({ casesCount, skinsCount }) {
   );
 }
 
-/* Kengaytirilgan Asosiy Admin Ekran */
+/* MAIN ADMIN SCREEN WITH BEAUTIFIED CRUD MODALS & CARDS */
 function AdminScreen({
   cases,
   skins,
   onAddCase,
+  onUpdateCase,
   onAddSkin,
+  onUpdateSkin,
   onDeleteCase,
   onDeleteSkin,
   onClose,
   token,
 }) {
   const adminClient = useMemo(() => createAdminClient(token), [token]);
-  const [tab, setTab] = useState("stats");
+  const [tab, setTab] = useState("skins");
   const [mounted, setMounted] = useState(false);
+
+  // Modal States
+  const [skinModalOpen, setSkinModalOpen] = useState(false);
+  const [editingSkin, setEditingSkin] = useState(null);
+
+  const [caseModalOpen, setCaseModalOpen] = useState(false);
+  const [editingCase, setEditingCase] = useState(null);
 
   useEffect(() => {
     const t = requestAnimationFrame(() => setMounted(true));
     return () => cancelAnimationFrame(t);
   }, []);
+
+  /* Skin Handlers */
+  const handleSaveSkin = async (data) => {
+    try {
+      if (editingSkin) {
+        const res = await adminClient.put(`/admin/skins/${editingSkin.id}`, data);
+        onUpdateSkin(norm(res.data));
+      } else {
+        const res = await adminClient.post("/admin/skins", data);
+        onAddSkin(norm(res.data));
+      }
+      setSkinModalOpen(false);
+      setEditingSkin(null);
+    } catch (err) {
+      alert(err.response?.data?.error || "Xatolik yuz berdi");
+    }
+  };
+
+  /* Case Handlers */
+  const handleSaveCase = async (data) => {
+    try {
+      if (editingCase) {
+        const res = await adminClient.put(`/admin/cases/${editingCase.id}`, data);
+        onUpdateCase(norm(res.data));
+      } else {
+        const res = await adminClient.post("/admin/cases", data);
+        onAddCase(norm(res.data));
+      }
+      setCaseModalOpen(false);
+      setEditingCase(null);
+    } catch (err) {
+      alert(err.response?.data?.error || "Xatolik yuz berdi");
+    }
+  };
 
   return (
     <div
@@ -1395,7 +1479,7 @@ function AdminScreen({
         <div className="flex items-center gap-2 px-4 pt-5 pb-3">
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-xl bg-[#12161f] border border-white/10 flex items-center justify-center text-gray-300"
+            className="w-8 h-8 rounded-xl bg-[#12161f] border border-white/10 flex items-center justify-center text-gray-300 hover:text-white"
           >
             <ArrowLeft size={16} />
           </button>
@@ -1436,91 +1520,157 @@ function AdminScreen({
           {tab === "users" && <AdminUsersTab client={adminClient} />}
 
           {tab === "cases" && (
-            <>
-              <AdminCaseForm onAdd={onAddCase} client={adminClient} />
-              <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  setEditingCase(null);
+                  setCaseModalOpen(true);
+                }}
+                className="w-full py-3 rounded-xl text-xs font-black bg-[#00ff66] text-black flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,255,102,0.3)] hover:bg-[#00e65c] transition-all"
+              >
+                <Plus size={16} /> Yangi Case Qo'shish
+              </button>
+
+              <div className="grid grid-cols-2 gap-2.5 mt-1">
                 {cases.map((cs) => (
                   <div
                     key={cs.id}
-                    className="rounded-xl p-3 flex items-center justify-between bg-[#12161f] border border-white/5"
+                    className="rounded-xl p-3 bg-[#12161f] border border-white/5 flex flex-col justify-between gap-2 relative group hover:border-[#00ff66]/30 transition-all"
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-[#0a0d14] overflow-hidden">
-                        <Thumb
-                          image={cs.image}
-                          color={cs.color || "#00ff66"}
-                          glow={`${cs.color || "#00ff66"}44`}
-                          Icon={iconFor(cs.id)}
-                          size={16}
-                        />
+                    <div className="w-full h-20 rounded-lg bg-[#0a0d14] flex items-center justify-center p-2 relative overflow-hidden">
+                      <Thumb
+                        image={cs.image}
+                        color={cs.color || "#00ff66"}
+                        glow={`${cs.color || "#00ff66"}44`}
+                        Icon={iconFor(cs.id)}
+                        size={32}
+                      />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white truncate">
+                        {cs.name}
                       </div>
-                      <div>
-                        <div className="text-xs font-bold text-white">
-                          {cs.name}
-                        </div>
-                        <div className="text-[10px] font-mono text-[#00ff66]">
-                          ${fmt(cs.price)}
-                        </div>
+                      <div className="text-xs font-black font-mono text-[#00ff66] mt-0.5">
+                        ${fmt(cs.price)}
                       </div>
                     </div>
-                    <button onClick={() => onDeleteCase(cs.id)}>
-                      <Trash2
-                        size={16}
-                        className="text-red-500 hover:text-red-400"
-                      />
-                    </button>
+                    <div className="flex items-center gap-1.5 pt-1 border-t border-white/5">
+                      <button
+                        onClick={() => {
+                          setEditingCase(cs);
+                          setCaseModalOpen(true);
+                        }}
+                        className="flex-1 py-1.5 rounded-lg bg-[#0a0d14] text-gray-300 hover:text-[#00ff66] flex items-center justify-center border border-white/5"
+                      >
+                        <Edit size={12} />
+                      </button>
+                      <button
+                        onClick={() => onDeleteCase(cs.id)}
+                        className="flex-1 py-1.5 rounded-lg bg-[#0a0d14] text-red-500 hover:text-red-400 flex items-center justify-center border border-white/5"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
-            </>
+            </div>
           )}
 
           {tab === "skins" && (
-            <>
-              <AdminSkinForm onAdd={onAddSkin} client={adminClient} />
-              <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  setEditingSkin(null);
+                  setSkinModalOpen(true);
+                }}
+                className="w-full py-3 rounded-xl text-xs font-black bg-[#00ff66] text-black flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,255,102,0.3)] hover:bg-[#00e65c] transition-all"
+              >
+                <Plus size={16} /> Yangi Skin Qo'shish
+              </button>
+
+              <div className="grid grid-cols-2 gap-2.5 mt-1">
                 {skins.map((s) => {
                   const R = RARITY[s.rarity] || RARITY.common;
                   return (
                     <div
                       key={s.id}
-                      className="rounded-xl p-3 flex items-center justify-between bg-[#12161f] border border-white/5"
+                      className="rounded-xl p-3 bg-[#12161f] border border-white/5 flex flex-col justify-between gap-2 relative group hover:border-[#00ff66]/30 transition-all"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-[#0a0d14] overflow-hidden">
-                          <Thumb
-                            image={s.image}
-                            color={R.color}
-                            glow={R.glow}
-                            Icon={iconFor(s.id)}
-                            size={16}
-                          />
+                      <div
+                        className="w-full h-20 rounded-lg flex items-center justify-center p-2 relative overflow-hidden"
+                        style={{ background: R.bg }}
+                      >
+                        <Thumb
+                          image={s.image}
+                          color={R.color}
+                          glow={R.glow}
+                          Icon={iconFor(s.id)}
+                          size={32}
+                        />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white truncate">
+                          {s.name}
                         </div>
-                        <div>
-                          <div className="text-xs font-bold text-white">
-                            {s.name}
-                          </div>
-                          <div
-                            className="text-[10px] font-mono"
+                        <div className="flex items-center justify-between mt-1">
+                          <span
+                            className="text-[8px] uppercase tracking-wider font-extrabold px-1 py-0.5 rounded bg-black/50"
                             style={{ color: R.color }}
                           >
-                            {R.label} · ${fmt(s.price)}
-                          </div>
+                            {R.label}
+                          </span>
+                          <span className="text-xs font-black font-mono text-[#00ff66]">
+                            ${fmt(s.price)}
+                          </span>
                         </div>
                       </div>
-                      <button onClick={() => onDeleteSkin(s.id)}>
-                        <Trash2
-                          size={16}
-                          className="text-red-500 hover:text-red-400"
-                        />
-                      </button>
+                      <div className="flex items-center gap-1.5 pt-1 border-t border-white/5">
+                        <button
+                          onClick={() => {
+                            setEditingSkin(s);
+                            setSkinModalOpen(true);
+                          }}
+                          className="flex-1 py-1.5 rounded-lg bg-[#0a0d14] text-gray-300 hover:text-[#00ff66] flex items-center justify-center border border-white/5"
+                        >
+                          <Edit size={12} />
+                        </button>
+                        <button
+                          onClick={() => onDeleteSkin(s.id)}
+                          className="flex-1 py-1.5 rounded-lg bg-[#0a0d14] text-red-500 hover:text-red-400 flex items-center justify-center border border-white/5"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
               </div>
-            </>
+            </div>
           )}
         </div>
+
+        {/* SKIN MODAL */}
+        <SkinModal
+          isOpen={skinModalOpen}
+          onClose={() => {
+            setSkinModalOpen(false);
+            setEditingSkin(null);
+          }}
+          skin={editingSkin}
+          onSave={handleSaveSkin}
+        />
+
+        {/* CASE MODAL */}
+        <CaseModal
+          isOpen={caseModalOpen}
+          onClose={() => {
+            setCaseModalOpen(false);
+            setEditingCase(null);
+          }}
+          cs={editingCase}
+          onSave={handleSaveCase}
+        />
       </div>
     </div>
   );
@@ -1854,12 +2004,24 @@ export default function App() {
             skins={skins}
             token={adminToken}
             onAddCase={(c) => setCases((cs) => [...cs, c])}
+            onUpdateCase={(updatedCase) =>
+              setCases((cs) =>
+                cs.map((c) => (c.id === updatedCase.id ? updatedCase : c))
+              )
+            }
             onAddSkin={(s) => setSkins((ss) => [...ss, s])}
+            onUpdateSkin={(updatedSkin) =>
+              setSkins((ss) =>
+                ss.map((s) => (s.id === updatedSkin.id ? updatedSkin : s))
+              )
+            }
             onDeleteCase={async (id) => {
+              if (!window.confirm("Rostdan ham ushbu caseni o'chirmoqchimisiz?")) return;
               await createAdminClient(adminToken).delete(`/admin/cases/${id}`);
               setCases((cs) => cs.filter((c) => c.id !== id));
             }}
             onDeleteSkin={async (id) => {
+              if (!window.confirm("Rostdan ham ushbu skinni o'chirmoqchimisiz?")) return;
               await createAdminClient(adminToken).delete(`/admin/skins/${id}`);
               setSkins((ss) => ss.filter((s) => s.id !== id));
             }}
