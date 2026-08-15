@@ -36,32 +36,32 @@ const RARITY = {
   common: {
     label: "Oddiy",
     color: "#9CA3AF",
-    glow: "rgba(156,163,175,0.25)",
-    bg: "linear-gradient(165deg, rgba(156,163,175,0.15) 0%, rgba(18,22,31,0.9) 100%)",
+    glow: "rgba(156,163,175,0.3)",
+    bg: "linear-gradient(180deg, rgba(156,163,175,0.1) 0%, rgba(18,22,31,0.95) 100%)",
   },
   rare: {
     label: "Noyob",
     color: "#3B82F6",
-    glow: "rgba(59,130,246,0.35)",
-    bg: "linear-gradient(165deg, rgba(59,130,246,0.2) 0%, rgba(18,22,31,0.9) 100%)",
+    glow: "rgba(59,130,246,0.4)",
+    bg: "linear-gradient(180deg, rgba(59,130,246,0.15) 0%, rgba(18,22,31,0.95) 100%)",
   },
   epic: {
     label: "Epik",
     color: "#A855F7",
-    glow: "rgba(168,85,247,0.45)",
-    bg: "linear-gradient(165deg, rgba(168,85,247,0.25) 0%, rgba(18,22,31,0.9) 100%)",
+    glow: "rgba(168,85,247,0.5)",
+    bg: "linear-gradient(180deg, rgba(168,85,247,0.2) 0%, rgba(18,22,31,0.95) 100%)",
   },
   legend: {
     label: "Afsonaviy",
     color: "#EAB308",
-    glow: "rgba(234,179,8,0.55)",
-    bg: "linear-gradient(165deg, rgba(234,179,8,0.3) 0%, rgba(18,22,31,0.9) 100%)",
+    glow: "rgba(234,179,8,0.6)",
+    bg: "linear-gradient(180deg, rgba(234,179,8,0.25) 0%, rgba(18,22,31,0.95) 100%)",
   },
   myth: {
     label: "Mif",
     color: "#EF4444",
-    glow: "rgba(239,68,68,0.65)",
-    bg: "linear-gradient(165deg, rgba(239,68,68,0.35) 0%, rgba(18,22,31,0.9) 100%)",
+    glow: "rgba(239,68,68,0.7)",
+    bg: "linear-gradient(180deg, rgba(239,68,68,0.3) 0%, rgba(18,22,31,0.95) 100%)",
   },
 };
 const RARITY_ORDER = ["common", "rare", "epic", "legend", "myth"];
@@ -83,28 +83,32 @@ const fmt = (n) =>
   });
 const norm = (o) => (o ? { ...o, id: o._id || o.id } : o);
 
-function Thumb({ image, color, glow, Icon, size = 32, plain = false }) {
-  const style = image
-    ? {
-        backgroundImage: `url(${image})`,
-        backgroundSize: "contain",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "center",
-      }
-    : plain
-    ? {}
-    : {
-        background: `radial-gradient(circle at 50% 50%, ${glow} 0%, transparent 75%)`,
-      };
+function Thumb({ image, color, glow, Icon, size = 32 }) {
+  const [imgError, setImgError] = useState(false);
+
   return (
-    <div className="w-full h-full flex items-center justify-center p-2">
-      {!image && (
-        <Icon
-          size={size}
-          color={color}
-          strokeWidth={1.5}
-          style={{ filter: `drop-shadow(0 0 8px ${color})` }}
+    <div className="w-full h-full flex items-center justify-center p-1.5 relative overflow-hidden">
+      {image && !imgError ? (
+        <img
+          src={image}
+          alt="skin"
+          onError={() => setImgError(true)}
+          className="w-full h-full object-contain drop-shadow-[0_5px_10px_rgba(0,0,0,0.5)] transition-transform duration-300 group-hover:scale-110"
         />
+      ) : (
+        <div
+          className="w-full h-full flex items-center justify-center"
+          style={{
+            background: `radial-gradient(circle, ${glow} 0%, transparent 70%)`,
+          }}
+        >
+          <Icon
+            size={size}
+            color={color}
+            strokeWidth={1.5}
+            style={{ filter: `drop-shadow(0 0 10px ${color})` }}
+          />
+        </div>
       )}
     </div>
   );
@@ -135,7 +139,7 @@ function SkinCard({ skin, onClick, badge, size = "md" }) {
       style={{ boxShadow: `0 4px 20px ${R.glow}` }}
     >
       <div className={`relative ${h} flex items-center justify-center`} style={{ background: R.bg }}>
-        <Thumb image={skin.image} color={R.color} glow={R.glow} Icon={Icon} plain />
+        <Thumb image={skin.image} color={R.color} glow={R.glow} Icon={Icon} size={36} />
         {badge}
       </div>
       <div className="p-2.5 bg-[#0f131a]">
@@ -144,7 +148,7 @@ function SkinCard({ skin, onClick, badge, size = "md" }) {
         </div>
         <div className="flex items-center justify-between mt-1.5">
           <span
-            className="text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded bg-black/40 border border-white/5"
+            className="text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded bg-black/50 border border-white/5"
             style={{ color: R.color }}
           >
             {R.label}
@@ -159,34 +163,39 @@ function SkinCard({ skin, onClick, badge, size = "md" }) {
 }
 
 /* ---------------------------------------------------------------
-   MINI REEL — CASE OPENING ANIMATION (NEON STYLE)
+   PROFESSIONAL CS2 ROULETTE REEL ANIMATION
 ----------------------------------------------------------------*/
 function MiniReel({ skins, winner, height, itemWidth, onDone }) {
   const containerRef = useRef(null);
   const [items, setItems] = useState([]);
   const [offset, setOffset] = useState(0);
   const [started, setStarted] = useState(false);
-  const DURATION = 3.5;
+  const DURATION = 4.2; // CS2 style smooth spin duration
 
   useEffect(() => {
+    // Generate reel array (Winner is placed deep at index 35)
+    const WIN_INDEX = 35;
     const arr = Array.from(
-      { length: 26 },
+      { length: 42 },
       () => skins[Math.floor(Math.random() * skins.length)] || winner,
     );
-    const winIndex = 20;
-    arr[winIndex] = winner;
+    arr[WIN_INDEX] = winner;
     setItems(arr);
+
     const raf1 = requestAnimationFrame(() => {
-      const w = (containerRef.current && containerRef.current.offsetWidth) || itemWidth * 3;
-      const jitter = Math.random() * itemWidth * 0.5 - itemWidth * 0.25;
-      const target = -(winIndex * itemWidth + itemWidth / 2 - w / 2) + jitter;
+      const w = containerRef.current?.offsetWidth || itemWidth * 3;
+      // Random offset inside winning tile for realistic feel
+      const randomPadding = Math.random() * (itemWidth * 0.6) - itemWidth * 0.3;
+      const target = -(WIN_INDEX * itemWidth + itemWidth / 2 - w / 2) + randomPadding;
+
       const raf2 = requestAnimationFrame(() => {
         setOffset(target);
         setStarted(true);
       });
       return () => cancelAnimationFrame(raf2);
     });
-    const t = setTimeout(() => onDone && onDone(), DURATION * 1000 + 150);
+
+    const t = setTimeout(() => onDone && onDone(), DURATION * 1000 + 100);
     return () => {
       cancelAnimationFrame(raf1);
       clearTimeout(t);
@@ -197,23 +206,32 @@ function MiniReel({ skins, winner, height, itemWidth, onDone }) {
   return (
     <div
       ref={containerRef}
-      className="relative rounded-xl overflow-hidden bg-[#0a0d14] border border-[#00ff66]/30 shadow-[0_0_15px_rgba(0,255,102,0.1)]"
+      className="relative rounded-2xl overflow-hidden bg-[#07090e] border-2 border-[#00ff66]/30 shadow-[0_0_25px_rgba(0,255,102,0.15)] my-2"
       style={{ height }}
     >
-      {/* Target Marker Pointer */}
-      <div className="absolute left-1/2 top-0 bottom-0 w-[2px] z-20 bg-[#00ff66] shadow-[0_0_12px_#00ff66]" />
-      <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-r from-[#0a0d14] via-transparent to-[#0a0d14]" />
+      {/* CS2 Needle Pointer Top/Bottom */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 z-30 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[12px] border-t-[#00ff66] drop-shadow-[0_0_8px_#00ff66]" />
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-30 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[12px] border-b-[#00ff66] drop-shadow-[0_0_8px_#00ff66]" />
+      
+      {/* Center Laser Beam Line */}
+      <div className="absolute left-1/2 top-0 bottom-0 w-[2px] z-20 bg-[#00ff66] shadow-[0_0_15px_#00ff66] opacity-80" />
+      
+      {/* Vignette Blur Gradient Sides */}
+      <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-r from-[#07090e] via-transparent to-[#07090e] opacity-90" />
+
+      {/* Moving Track */}
       <div
         className="flex h-full items-center absolute left-0 top-0"
         style={{
           transform: `translateX(${offset}px)`,
-          transition: started ? `transform ${DURATION}s cubic-bezier(0.08,0.82,0.12,1)` : "none",
+          transition: started
+            ? `transform ${DURATION}s cubic-bezier(0.12, 0.8, 0.15, 1)`
+            : "none",
         }}
       >
         {items.map((s, i) => {
-          const R = RARITY[s.rarity] || RARITY.common;
-          const Icon = iconFor(s.id + i);
-          const inner = Math.max(18, itemWidth * 0.3);
+          const R = RARITY[s?.rarity] || RARITY.common;
+          const Icon = iconFor(s?.id || i);
           return (
             <div
               key={i}
@@ -221,13 +239,26 @@ function MiniReel({ skins, winner, height, itemWidth, onDone }) {
               style={{ width: itemWidth, height }}
             >
               <div
-                className="w-full h-full rounded-lg overflow-hidden flex flex-col items-center justify-center border"
+                className="w-full h-full rounded-xl overflow-hidden flex flex-col items-center justify-between p-1.5 border relative group"
                 style={{
                   background: R.bg,
-                  borderColor: `${R.color}66`,
+                  borderColor: `${R.color}88`,
+                  boxShadow: `inset 0 0 15px ${R.glow}`,
                 }}
               >
-                <Thumb image={s.image} color={R.color} glow={R.glow} Icon={Icon} size={inner} plain />
+                <div className="w-full h-full relative flex items-center justify-center">
+                  <Thumb
+                    image={s?.image}
+                    color={R.color}
+                    glow={R.glow}
+                    Icon={Icon}
+                    size={28}
+                  />
+                </div>
+                <div
+                  className="w-full h-1 rounded-full mt-1"
+                  style={{ background: R.color, boxShadow: `0 0 6px ${R.color}` }}
+                />
               </div>
             </div>
           );
@@ -240,7 +271,15 @@ function MiniReel({ skins, winner, height, itemWidth, onDone }) {
 /* ---------------------------------------------------------------
    CASE DETAIL SCREEN
 ----------------------------------------------------------------*/
-function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx, onAddToInventory }) {
+function CaseDetailScreen({
+  cs,
+  skins,
+  balance,
+  onBack,
+  onBalanceChange,
+  onAddTx,
+  refreshInventory,
+}) {
   const [qty, setQty] = useState(1);
   const [phase, setPhase] = useState("idle");
   const [winners, setWinners] = useState([]);
@@ -261,9 +300,16 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx
   const totalPrice = cs.price * qty;
   const canAfford = balance >= totalPrice;
 
+  // Keyingi sahifaga o'tganda yoki orqaga qaytganda invertarni yangilash
+  const handleExit = () => {
+    refreshInventory();
+    onBack();
+  };
+
   useEffect(() => {
     if (phase === "spinning" && busyQty > 0 && doneCount >= busyQty) {
       setPhase("result");
+      refreshInventory(); // Spinning tugashi bilan inventar backend'dan yangilanadi!
       const best = winners.reduce(
         (b, w) =>
           RARITY_ORDER.indexOf(w.skin.rarity) > RARITY_ORDER.indexOf(b)
@@ -273,7 +319,7 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx
       );
       if (best === "legend" || best === "myth") {
         setFlashColor(RARITY[best].color);
-        setTimeout(() => setFlashColor(null), 500);
+        setTimeout(() => setFlashColor(null), 600);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -293,7 +339,10 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx
         lastBalance = res.data.balance;
       }
       onBalanceChange(lastBalance);
-      onAddTx(qty > 1 ? `Case ochish x${qty} (${cs.name})` : `Case ochish (${cs.name})`, -totalPrice);
+      onAddTx(
+        qty > 1 ? `Case ochish x${qty} (${cs.name})` : `Case ochish (${cs.name})`,
+        -totalPrice,
+      );
       setWinners(results);
       setDoneCount(0);
       setPhase("spinning");
@@ -304,13 +353,13 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx
   };
 
   const reset = () => {
+    refreshInventory();
     setPhase("idle");
     setWinners([]);
     setDoneCount(0);
   };
 
   const handleKeepAll = () => {
-    onAddToInventory(winners);
     reset();
   };
 
@@ -327,21 +376,26 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx
     }
     onBalanceChange(bal);
     if (total > 0) {
-      onAddTx(winners.length > 1 ? `Sotildi (${winners.length} ta)` : `Sotildi: ${winners[0]?.skin.name}`, total);
+      onAddTx(
+        winners.length > 1
+          ? `Sotildi (${winners.length} ta)`
+          : `Sotildi: ${winners[0]?.skin.name}`,
+        total,
+      );
     }
     setSelling(false);
     reset();
   };
 
   const cols = busyQty === 1 ? 1 : busyQty <= 4 ? 2 : 3;
-  const reelH = busyQty === 1 ? 120 : busyQty <= 4 ? 90 : 75;
+  const reelH = busyQty === 1 ? 130 : busyQty <= 4 ? 95 : 80;
   const reelW = busyQty === 1 ? 110 : busyQty <= 4 ? 85 : 70;
 
   return (
     <div className="pb-28">
       <div className="flex items-center justify-between px-4 pt-5 pb-3">
         <button
-          onClick={onBack}
+          onClick={handleExit}
           className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#12161f] border border-white/10 hover:border-[#00ff66]/50 text-gray-300 transition-colors"
         >
           <ArrowLeft size={18} />
@@ -354,31 +408,34 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx
 
       <div className="mx-4 rounded-2xl bg-[#12161f] border border-[#00ff66]/20 relative mb-6 p-5 overflow-hidden shadow-[0_0_30px_rgba(0,255,102,0.05)]">
         <div className="absolute inset-0 bg-gradient-to-b from-[#00ff66]/10 via-transparent to-transparent pointer-events-none" />
-        
+
         {flashColor && (
           <div
-            className="absolute inset-0 pointer-events-none animate-ping opacity-50 z-30"
+            className="absolute inset-0 pointer-events-none animate-ping opacity-60 z-40"
             style={{ background: flashColor }}
           />
         )}
 
         <div className="relative flex flex-col items-center">
-          <div
-            className="w-24 h-24 rounded-2xl flex items-center justify-center mb-3 bg-[#0a0d14] border border-[#00ff66]/40 shadow-[0_0_20px_rgba(0,255,102,0.2)]"
-          >
-            <Icon
-              size={46}
-              color={cs.color || "#00ff66"}
-              strokeWidth={1.4}
-              style={{ filter: `drop-shadow(0 0 10px ${cs.color || "#00ff66"})` }}
-            />
-          </div>
-          <div className="text-xl font-black text-white mb-1 tracking-tight">
-            {cs.name}
-          </div>
-          <div className="flex items-center gap-1.5 mb-5 font-mono text-lg font-black text-[#00ff66]">
-            ${fmt(cs.price)}
-          </div>
+          {phase === "idle" && (
+            <>
+              <div className="w-24 h-24 rounded-2xl flex items-center justify-center mb-3 bg-[#0a0d14] border border-[#00ff66]/40 shadow-[0_0_20px_rgba(0,255,102,0.2)]">
+                <Thumb
+                  image={cs.image}
+                  color={cs.color || "#00ff66"}
+                  glow={cs.color || "#00ff66"}
+                  Icon={Icon}
+                  size={46}
+                />
+              </div>
+              <div className="text-xl font-black text-white mb-1 tracking-tight">
+                {cs.name}
+              </div>
+              <div className="flex items-center gap-1.5 mb-5 font-mono text-lg font-black text-[#00ff66]">
+                ${fmt(cs.price)}
+              </div>
+            </>
+          )}
 
           {errMsg && (
             <div className="w-full mb-3 text-xs font-bold text-red-500 text-center bg-red-500/10 py-2 rounded-lg border border-red-500/20">
@@ -420,13 +477,18 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx
           )}
 
           {phase === "fetching" && (
-            <div className="w-full py-4 rounded-xl text-center text-xs font-black uppercase tracking-widest text-[#00ff66] bg-[#0a0d14] border border-[#00ff66]/30 animate-pulse">
-              Tayyorlanmoqda...
+            <div className="w-full py-8 text-center">
+              <div className="text-xs font-black uppercase tracking-widest text-[#00ff66] animate-pulse">
+                Case aylanmoqda...
+              </div>
             </div>
           )}
 
           {phase === "spinning" && (
-            <div className="w-full grid gap-2" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))` }}>
+            <div
+              className="w-full grid gap-2"
+              style={{ gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))` }}
+            >
               {winners.map((w, i) => (
                 <MiniReel
                   key={i}
@@ -452,12 +514,12 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx
                   return (
                     <div
                       key={i}
-                      className="relative rounded-xl overflow-hidden animate-[dropIn_.4s_ease-out] border flex flex-col items-center justify-center"
+                      className="relative rounded-xl overflow-hidden animate-[dropIn_.4s_ease-out] border flex flex-col items-center justify-center p-2"
                       style={{
-                        height: busyQty === 1 ? 130 : 100,
+                        height: busyQty === 1 ? 140 : 105,
                         background: R.bg,
                         borderColor: R.color,
-                        boxShadow: `0 0 20px ${R.glow}`,
+                        boxShadow: `0 0 25px ${R.glow}`,
                       }}
                     >
                       <Thumb
@@ -465,10 +527,9 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx
                         color={R.color}
                         glow={R.glow}
                         Icon={Ic}
-                        size={busyQty === 1 ? 48 : 30}
-                        plain
+                        size={busyQty === 1 ? 48 : 32}
                       />
-                      <div className="absolute bottom-1.5 inset-x-1 text-[10px] font-black text-center text-white truncate px-1 bg-black/60 rounded py-0.5">
+                      <div className="mt-1 text-[10px] font-black text-center text-white truncate w-full bg-black/60 rounded py-0.5 px-1">
                         {w.skin.name}
                       </div>
                     </div>
@@ -498,7 +559,7 @@ function CaseDetailScreen({ cs, skins, balance, onBack, onBalanceChange, onAddTx
                   onClick={handleKeepAll}
                   className="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider bg-[#0a0d14] text-white border border-white/10 hover:border-white/30"
                 >
-                  {busyQty === 1 ? "Inventarga" : "Saqlash"}
+                  Inventarga saqlash
                 </button>
               </div>
             </div>
@@ -606,13 +667,17 @@ function HomeScreen({
       {/* DAILY BONUS */}
       <div className="mx-4 mb-6 rounded-xl p-3.5 flex items-center justify-between bg-[#12161f] border border-white/5">
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${dailyAvailable ? 'bg-[#00ff66] text-black shadow-[0_0_12px_rgba(0,255,102,0.4)]' : 'bg-gray-800 text-gray-500'}`}>
+          <div
+            className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+              dailyAvailable
+                ? "bg-[#00ff66] text-black shadow-[0_0_12px_rgba(0,255,102,0.4)]"
+                : "bg-gray-800 text-gray-500"
+            }`}
+          >
             <Gift size={20} />
           </div>
           <div>
-            <div className="text-xs font-bold text-white">
-              Kunlik Bonus
-            </div>
+            <div className="text-xs font-bold text-white">Kunlik Bonus</div>
             <div className="text-[10px] text-gray-400">
               {dailyAvailable ? "+$0.10 tayyor" : "Ertaga qayting"}
             </div>
@@ -825,9 +890,7 @@ function BalanceScreen({ balance, txs, onDeposit }) {
       </div>
       <div className="px-4 flex flex-col gap-2">
         {txs.length === 0 && (
-          <div className="text-xs text-gray-500">
-            Hozircha tranzaksiya yo‘q
-          </div>
+          <div className="text-xs text-gray-500">Hozircha tranzaksiya yo‘q</div>
         )}
         {txs.map((t, i) => (
           <div
@@ -886,7 +949,9 @@ function ProfileScreen({ user, balance, inventory, refCode, refStats }) {
         ].map(([l, v]) => (
           <div key={l} className="rounded-xl p-3 text-center bg-[#12161f] border border-white/5">
             <div className="text-sm font-black text-white font-mono">{v}</div>
-            <div className="text-[10px] text-gray-400 font-bold uppercase mt-0.5">{l}</div>
+            <div className="text-[10px] text-gray-400 font-bold uppercase mt-0.5">
+              {l}
+            </div>
           </div>
         ))}
       </div>
@@ -894,20 +959,32 @@ function ProfileScreen({ user, balance, inventory, refCode, refStats }) {
       <div className="mx-4 rounded-2xl p-4 mb-5 bg-[#12161f] border border-[#00ff66]/20">
         <div className="flex items-center gap-2 mb-3">
           <Users size={16} className="text-[#00ff66]" />
-          <span className="text-sm font-black text-white uppercase tracking-wider">Referral System</span>
+          <span className="text-sm font-black text-white uppercase tracking-wider">
+            Referral System
+          </span>
         </div>
         <div className="flex gap-6 mb-3">
           <div>
-            <div className="text-base font-black text-white font-mono">{refStats.count}</div>
-            <div className="text-[10px] text-gray-400 uppercase font-bold">Takliflar</div>
+            <div className="text-base font-black text-white font-mono">
+              {refStats.count}
+            </div>
+            <div className="text-[10px] text-gray-400 uppercase font-bold">
+              Takliflar
+            </div>
           </div>
           <div>
-            <div className="text-base font-black text-[#00ff66] font-mono">${fmt(refStats.earned)}</div>
-            <div className="text-[10px] text-gray-400 uppercase font-bold">Ishalangan Bonus</div>
+            <div className="text-base font-black text-[#00ff66] font-mono">
+              ${fmt(refStats.earned)}
+            </div>
+            <div className="text-[10px] text-gray-400 uppercase font-bold">
+              Ishalangan Bonus
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 bg-[#0a0d14] border border-white/10">
-          <span className="flex-1 text-xs truncate text-gray-400 font-mono">{link}</span>
+          <span className="flex-1 text-xs truncate text-gray-400 font-mono">
+            {link}
+          </span>
           <button
             onClick={() => {
               navigator.clipboard.writeText(link).catch(() => {});
@@ -915,7 +992,11 @@ function ProfileScreen({ user, balance, inventory, refCode, refStats }) {
               setTimeout(() => setCopied(false), 1500);
             }}
           >
-            {copied ? <Check size={16} className="text-[#00ff66]" /> : <Users size={16} className="text-gray-400 hover:text-[#00ff66]" />}
+            {copied ? (
+              <Check size={16} className="text-[#00ff66]" />
+            ) : (
+              <Users size={16} className="text-gray-400 hover:text-[#00ff66]" />
+            )}
           </button>
         </div>
       </div>
@@ -967,13 +1048,19 @@ function AdminSkinForm({ onAdd, client: adminClient }) {
             className="rounded-lg px-2.5 py-2 text-xs font-medium bg-[#0a0d14] border border-white/10 text-white outline-none"
           >
             {RARITY_ORDER.map((r) => (
-              <option key={r} value={r}>{RARITY[r].label}</option>
+              <option key={r} value={r}>
+                {RARITY[r].label}
+              </option>
             ))}
           </select>
         </label>
         <NumField label="Narxi ($)" value={f.price} onChange={set("price")} />
       </div>
-      <NumField label="Rasm URL (ixtiyoriy)" value={f.image} onChange={set("image")} />
+      <NumField
+        label="Rasm URL (ixtiyoriy)"
+        value={f.image}
+        onChange={set("image")}
+      />
       <button
         onClick={async () => {
           if (!f.name.trim()) return;
@@ -1013,7 +1100,8 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
   });
   const set = (key) => (val) => setF((prev) => ({ ...prev, [key]: val }));
   const sum = ["common", "rare", "epic", "legend", "myth"].reduce(
-    (a, r) => a + (parseFloat(f[r]) || 0), 0
+    (a, r) => a + (parseFloat(f[r]) || 0),
+    0,
   );
 
   return (
@@ -1025,18 +1113,31 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
         <NumField label="Nomi" value={f.name} onChange={set("name")} />
         <NumField label="Narxi ($)" value={f.price} onChange={set("price")} />
       </div>
-      <NumField label="Rasm URL (ixtiyoriy)" value={f.image} onChange={set("image")} />
+      <NumField
+        label="Rasm URL (ixtiyoriy)"
+        value={f.image}
+        onChange={set("image")}
+      />
       <div className="mt-3">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[10px] font-bold text-gray-400">Ehtimollar (%)</span>
-          <span className={`text-[10px] font-extrabold ${Math.round(sum) === 100 ? 'text-[#00ff66]' : 'text-red-500'}`}>
+          <span className="text-[10px] font-bold text-gray-400">
+            Ehtimollar (%)
+          </span>
+          <span
+            className={`text-[10px] font-extrabold ${
+              Math.round(sum) === 100 ? "text-[#00ff66]" : "text-red-500"
+            }`}
+          >
             Jami: {sum.toFixed(1)}%
           </span>
         </div>
         <div className="grid grid-cols-5 gap-1">
           {RARITY_ORDER.map((r) => (
             <label key={r} className="flex flex-col gap-1 items-center">
-              <span className="text-[8px] font-bold uppercase" style={{ color: RARITY[r].color }}>
+              <span
+                className="text-[8px] font-bold uppercase"
+                style={{ color: RARITY[r].color }}
+              >
                 {RARITY[r].label}
               </span>
               <input
@@ -1067,8 +1168,15 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
             });
             onAdd(norm(res.data));
             setF({
-              name: "", price: "5", color: "#00ff66", image: "",
-              common: "50", rare: "30", epic: "14", legend: "5", myth: "1",
+              name: "",
+              price: "5",
+              color: "#00ff66",
+              image: "",
+              common: "50",
+              rare: "30",
+              epic: "14",
+              legend: "5",
+              myth: "1",
             });
           } catch (err) {
             alert(err.response?.data?.error || "Xatolik yuz berdi");
@@ -1082,7 +1190,16 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
   );
 }
 
-function AdminScreen({ cases, skins, onAddCase, onAddSkin, onDeleteCase, onDeleteSkin, onClose, token }) {
+function AdminScreen({
+  cases,
+  skins,
+  onAddCase,
+  onAddSkin,
+  onDeleteCase,
+  onDeleteSkin,
+  onClose,
+  token,
+}) {
   const adminClient = useMemo(() => createAdminClient(token), [token]);
   const [tab, setTab] = useState("cases");
   const [mounted, setMounted] = useState(false);
@@ -1103,7 +1220,9 @@ function AdminScreen({ cases, skins, onAddCase, onAddSkin, onDeleteCase, onDelet
       <div
         className="w-full max-w-[380px] h-[700px] rounded-3xl overflow-hidden flex flex-col bg-[#0a0d14] border border-white/10 shadow-2xl"
         style={{
-          transform: mounted ? "translateY(0) scale(1)" : "translateY(16px) scale(0.98)",
+          transform: mounted
+            ? "translateY(0) scale(1)"
+            : "translateY(16px) scale(0.98)",
           transition: "transform .28s cubic-bezier(0.16,1,0.3,1)",
         }}
       >
@@ -1129,7 +1248,9 @@ function AdminScreen({ cases, skins, onAddCase, onAddSkin, onDeleteCase, onDelet
               key={id}
               onClick={() => setTab(id)}
               className={`px-4 py-1.5 rounded-full text-xs font-black ${
-                tab === id ? "bg-[#00ff66] text-black" : "bg-[#12161f] text-gray-400 border border-white/5"
+                tab === id
+                  ? "bg-[#00ff66] text-black"
+                  : "bg-[#12161f] text-gray-400 border border-white/5"
               }`}
             >
               {l}
@@ -1143,18 +1264,34 @@ function AdminScreen({ cases, skins, onAddCase, onAddSkin, onDeleteCase, onDelet
               <AdminCaseForm onAdd={onAddCase} client={adminClient} />
               <div className="flex flex-col gap-2">
                 {cases.map((cs) => (
-                  <div key={cs.id} className="rounded-xl p-3 flex items-center justify-between bg-[#12161f] border border-white/5">
+                  <div
+                    key={cs.id}
+                    className="rounded-xl p-3 flex items-center justify-between bg-[#12161f] border border-white/5"
+                  >
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-lg bg-[#0a0d14] overflow-hidden">
-                        <Thumb image={cs.image} color={cs.color || "#00ff66"} glow={`${cs.color || "#00ff66"}44`} Icon={iconFor(cs.id)} size={16} />
+                        <Thumb
+                          image={cs.image}
+                          color={cs.color || "#00ff66"}
+                          glow={`${cs.color || "#00ff66"}44`}
+                          Icon={iconFor(cs.id)}
+                          size={16}
+                        />
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-white">{cs.name}</div>
-                        <div className="text-[10px] font-mono text-[#00ff66]">${fmt(cs.price)}</div>
+                        <div className="text-xs font-bold text-white">
+                          {cs.name}
+                        </div>
+                        <div className="text-[10px] font-mono text-[#00ff66]">
+                          ${fmt(cs.price)}
+                        </div>
                       </div>
                     </div>
                     <button onClick={() => onDeleteCase(cs.id)}>
-                      <Trash2 size={16} className="text-red-500 hover:text-red-400" />
+                      <Trash2
+                        size={16}
+                        className="text-red-500 hover:text-red-400"
+                      />
                     </button>
                   </div>
                 ))}
@@ -1169,18 +1306,37 @@ function AdminScreen({ cases, skins, onAddCase, onAddSkin, onDeleteCase, onDelet
                 {skins.map((s) => {
                   const R = RARITY[s.rarity] || RARITY.common;
                   return (
-                    <div key={s.id} className="rounded-xl p-3 flex items-center justify-between bg-[#12161f] border border-white/5">
+                    <div
+                      key={s.id}
+                      className="rounded-xl p-3 flex items-center justify-between bg-[#12161f] border border-white/5"
+                    >
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-lg bg-[#0a0d14] overflow-hidden">
-                          <Thumb image={s.image} color={R.color} glow={R.glow} Icon={iconFor(s.id)} size={16} />
+                          <Thumb
+                            image={s.image}
+                            color={R.color}
+                            glow={R.glow}
+                            Icon={iconFor(s.id)}
+                            size={16}
+                          />
                         </div>
                         <div>
-                          <div className="text-xs font-bold text-white">{s.name}</div>
-                          <div className="text-[10px] font-mono" style={{ color: R.color }}>{R.label} · ${fmt(s.price)}</div>
+                          <div className="text-xs font-bold text-white">
+                            {s.name}
+                          </div>
+                          <div
+                            className="text-[10px] font-mono"
+                            style={{ color: R.color }}
+                          >
+                            {R.label} · ${fmt(s.price)}
+                          </div>
                         </div>
                       </div>
                       <button onClick={() => onDeleteSkin(s.id)}>
-                        <Trash2 size={16} className="text-red-500 hover:text-red-400" />
+                        <Trash2
+                          size={16}
+                          className="text-red-500 hover:text-red-400"
+                        />
                       </button>
                     </div>
                   );
@@ -1227,6 +1383,18 @@ export default function App() {
   const [listings, setListings] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
+  // Inventarni backend'dan qayta yuklab olish funksiyasi
+  const fetchInventory = async () => {
+    try {
+      const invRes = await client.get("/inventory");
+      setInventory(
+        invRes.data.map((i) => ({ ...norm(i.skin), _invId: i._id })),
+      );
+    } catch (err) {
+      console.error("INVENTORY FETCH XATOSI:", err);
+    }
+  };
+
   useEffect(() => {
     (async () => {
       try {
@@ -1264,14 +1432,7 @@ export default function App() {
         console.error("DAILY XATOSI:", err.response?.data || err.message);
       }
 
-      try {
-        const invRes = await client.get("/inventory");
-        setInventory(
-          invRes.data.map((i) => ({ ...norm(i.skin), _invId: i._id })),
-        );
-      } catch (err) {
-        console.error("INVENTORY XATOSI:", err.response?.data || err.message);
-      }
+      await fetchInventory();
 
       try {
         const refRes = await client.get("/referral/stats");
@@ -1310,13 +1471,6 @@ export default function App() {
   const addTx = (label, amt) =>
     setTxs((t) => [{ label, amt, time: "hozir" }, ...t].slice(0, 20));
 
-  const addToInventory = (items) => {
-    setInventory((inv) => [
-      ...items.map((it) => ({ ...it.skin, _invId: it.invId })),
-      ...inv,
-    ]);
-  };
-
   const handleDaily = async () => {
     if (!dailyAvailable) return;
     try {
@@ -1346,11 +1500,8 @@ export default function App() {
       const res = await client.post(`/marketplace/${listingId}/buy`);
       setBalance(res.data.balance);
       setListings((ls) => ls.filter((l) => l._id !== listingId));
-      const bought = listings.find((l) => l._id === listingId);
-      if (bought) {
-        setInventory((inv) => [{ ...bought.skin }, ...inv]);
-        addTx(`Sotib olindi: ${bought.skin.name}`, -bought.price);
-      }
+      await fetchInventory();
+      addTx("Sotib olindi", -res.data.price || 0);
     } catch (err) {
       alert(err.response?.data?.error || "Xatolik");
     }
@@ -1387,6 +1538,9 @@ export default function App() {
   };
 
   const goTab = (id) => {
+    if (tab === "cases" || id === "inventory") {
+      fetchInventory();
+    }
     setViewingCase(null);
     setTab(id);
   };
@@ -1406,7 +1560,7 @@ export default function App() {
       <style>{`
         @keyframes dropIn { 0% { opacity:0; transform:scale(.6) translateY(10px);} 60% { opacity:1; transform:scale(1.06) translateY(0);} 100% { transform:scale(1); opacity:1; } }
       `}</style>
-      
+
       {/* MOBILE FRAME WRAPPER */}
       <div className="w-full max-w-[400px] h-[100vh] md:h-[750px] relative overflow-hidden bg-[#0a0d14] md:rounded-[32px] border-0 md:border md:border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col font-sans">
         
@@ -1417,10 +1571,13 @@ export default function App() {
               cs={viewingCase}
               skins={skins}
               balance={balance}
-              onBack={() => setViewingCase(null)}
+              onBack={() => {
+                fetchInventory();
+                setViewingCase(null);
+              }}
               onBalanceChange={setBalance}
               onAddTx={addTx}
-              onAddToInventory={addToInventory}
+              refreshInventory={fetchInventory}
             />
           ) : (
             <>
@@ -1488,7 +1645,9 @@ export default function App() {
                   <Icon
                     size={20}
                     className={`transition-colors ${
-                      active ? "text-[#00ff66]" : "text-gray-500 group-hover:text-gray-300"
+                      active
+                        ? "text-[#00ff66]"
+                        : "text-gray-500 group-hover:text-gray-300"
                     }`}
                   />
                   <span
