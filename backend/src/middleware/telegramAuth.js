@@ -5,34 +5,31 @@ const Referral = require('../models/Referral');
 function checkTelegramAuth(initData, botToken) {
   if (!initData) return false;
 
-  // 1. initData'ni '&' belgisi bo'yicha bo'lib olamiz (decode qilmasdan)
-  const parts = initData.split('&');
-  let hash = '';
-  const dataCheckArr = [];
+  try {
+    const urlParams = new URLSearchParams(initData);
+    const hash = urlParams.get('hash');
+    if (!hash) return false;
 
-  for (const part of parts) {
-    const [key, ...valueParts] = part.split('=');
-    const value = valueParts.join('=');
+    // Hash parametrini o'chirib tashlaymiz
+    urlParams.delete('hash');
 
-    if (key === 'hash') {
-      hash = value;
-    } else {
-      // Decode qilinmagan asl key va value'ni saqlaymiz
-      dataCheckArr.push(`${key}=${decodeURIComponent(value)}`);
+    // Parametrlarni saralaymiz va decodeURIComponent orqali to'g'ri ko'rinishga keltiramiz
+    const dataCheckArr = [];
+    for (const [key, value] of urlParams.entries()) {
+      dataCheckArr.push(`${key}=${value}`);
     }
+    dataCheckArr.sort();
+    const dataCheckString = dataCheckArr.join('\n');
+
+    // HMAC SHA256 orqali secret key va hash hisoblaymiz
+    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
+    const computedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+
+    return computedHash === hash;
+  } catch (err) {
+    console.error('CheckAuth Error:', err);
+    return false;
   }
-
-  if (!hash) return false;
-
-  // 2. Alifbo bo'yicha tartiblaymiz va '\n' bilan biriktiramiz
-  dataCheckArr.sort();
-  const dataCheckString = dataCheckArr.join('\n');
-
-  // 3. HMAC hisoblash
-  const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
-  const computedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
-
-  return computedHash === hash;
 }
 
 async function telegramAuth(req, res, next) {
@@ -41,21 +38,22 @@ async function telegramAuth(req, res, next) {
 
     if (!initData) return res.status(401).json({ error: 'initData yo‘q' });
 
-    // Telegram InitData Validatsiya
+    // Validatsiya
     const isValid = checkTelegramAuth(initData, process.env.BOT_TOKEN);
-    if (!isValid) return res.status(401).json({ error: 'Noto‘g‘ri initData' });
+    if (!isValid) {
+      console.log('Xato initData keldi:', initData); // Backend konsolida ko'rinadi
+      return res.status(401).json({ error: 'Noto‘g‘ri initData' });
+    }
 
     const urlParams = new URLSearchParams(initData);
     const userJson = urlParams.get('user');
     if (!userJson) return res.status(401).json({ error: 'User topilmadi' });
     const tgUser = JSON.parse(userJson);
 
-    // Telegram referal kodni 'start_param' ko'rinishida beradi
     const refCode = urlParams.get('start_param') || req.query.ref || req.body.ref;
 
     let user = await User.findOne({ telegramId: String(tgUser.id) });
 
-    // Yangi foydalanuvchi kirgan bo'lsa
     if (!user) {
       let referrerUser = null;
 
