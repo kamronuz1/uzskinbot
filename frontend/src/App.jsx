@@ -926,11 +926,11 @@ function ProfileScreen({ user, balance, inventory, refCode, refStats }) {
       <ScreenHeader title="Profil" />
       <div className="mx-4 rounded-2xl p-4 flex items-center gap-3.5 mb-4 bg-[#12161f] border border-white/5">
         <div className="w-14 h-14 rounded-2xl bg-[#00ff66] text-black font-black text-xl flex items-center justify-center shadow-[0_0_15px_rgba(0,255,102,0.3)]">
-          {user.name[0]}
+          {(user.name || "U")[0]}
         </div>
         <div>
           <div className="text-base font-extrabold text-white">{user.name}</div>
-          <div className="text-xs text-gray-400">@{user.username}</div>
+          <div className="text-xs text-gray-400">@{user.username || "user"}</div>
         </div>
       </div>
 
@@ -1264,7 +1264,7 @@ function AdminUsersTab({ client: adminClient }) {
 
   const filteredUsers = users.filter(
     (u) =>
-      (u.firstName || "").toLowerCase().includes(search.toLowerCase()) ||
+      (u.firstName || u.first_name || u.name || "").toLowerCase().includes(search.toLowerCase()) ||
       (u.username || "").toLowerCase().includes(search.toLowerCase()) ||
       (u.telegramId || "").toString().includes(search)
   );
@@ -1302,58 +1302,61 @@ function AdminUsersTab({ client: adminClient }) {
       )}
 
       <div className="flex flex-col gap-2">
-        {filteredUsers.map((u) => (
-          <div
-            key={u._id}
-            className="rounded-xl p-3 bg-[#12161f] border border-white/5 flex items-center justify-between gap-2 hover:border-white/10 transition-colors"
-          >
-            <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="w-8 h-8 rounded-lg bg-[#0a0d14] font-black text-xs text-[#00ff66] flex items-center justify-center shrink-0 border border-white/5">
-                {(u.firstName || u.username || "U")[0]}
-              </div>
-              <div className="truncate">
-                <div className="text-xs font-bold text-white flex items-center gap-1.5 truncate">
-                  {u.firstName || "Telegram User"}
-                  {u.isAdmin && (
-                    <span className="text-[8px] bg-[#00ff66]/20 text-[#00ff66] font-black px-1 rounded">
-                      ADMIN
-                    </span>
-                  )}
-                  {u.isBlocked && (
-                    <span className="text-[8px] bg-red-500/20 text-red-400 font-black px-1 rounded">
-                      BLOKLANGAN
-                    </span>
-                  )}
+        {filteredUsers.map((u) => {
+          const name = u.firstName || u.first_name || u.name || u.username || "Telegram User";
+          return (
+            <div
+              key={u._id}
+              className="rounded-xl p-3 bg-[#12161f] border border-white/5 flex items-center justify-between gap-2 hover:border-white/10 transition-colors"
+            >
+              <div className="flex items-center gap-2.5 overflow-hidden">
+                <div className="w-8 h-8 rounded-lg bg-[#0a0d14] font-black text-xs text-[#00ff66] flex items-center justify-center shrink-0 border border-white/5">
+                  {name[0]}
                 </div>
-                <div className="text-[10px] text-gray-400 font-mono truncate">
-                  @{u.username || "no_user"} ·{" "}
-                  <span className="text-[#00ff66] font-bold">${fmt(u.balance)}</span>
+                <div className="truncate">
+                  <div className="text-xs font-bold text-white flex items-center gap-1.5 truncate">
+                    {name}
+                    {u.isAdmin && (
+                      <span className="text-[8px] bg-[#00ff66]/20 text-[#00ff66] font-black px-1 rounded">
+                        ADMIN
+                      </span>
+                    )}
+                    {u.isBlocked && (
+                      <span className="text-[8px] bg-red-500/20 text-red-400 font-black px-1 rounded">
+                        BLOKLANGAN
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[10px] text-gray-400 font-mono truncate">
+                    @{u.username || "no_user"} ·{" "}
+                    <span className="text-[#00ff66] font-bold">${fmt(u.balance || 0)}</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={() => handleUpdateBalance(u._id, u.balance)}
-                className="p-1.5 rounded-lg bg-[#0a0d14] border border-white/10 text-gray-300 hover:text-[#00ff66]"
-                title="Balansni o'zgartirish"
-              >
-                <Edit size={13} />
-              </button>
-              <button
-                onClick={() => handleToggleBan(u._id, u.isBlocked)}
-                className={`p-1.5 rounded-lg border transition-colors ${
-                  u.isBlocked
-                    ? "bg-red-500/20 text-red-400 border-red-500/30"
-                    : "bg-[#0a0d14] border-white/10 text-gray-400 hover:text-red-400"
-                }`}
-                title={u.isBlocked ? "Blokdan chiqarish" : "Bloklash"}
-              >
-                <Ban size={13} />
-              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => handleUpdateBalance(u._id, u.balance || 0)}
+                  className="p-1.5 rounded-lg bg-[#0a0d14] border border-white/10 text-gray-300 hover:text-[#00ff66]"
+                  title="Balansni o'zgartirish"
+                >
+                  <Edit size={13} />
+                </button>
+                <button
+                  onClick={() => handleToggleBan(u._id, u.isBlocked)}
+                  className={`p-1.5 rounded-lg border transition-colors ${
+                    u.isBlocked
+                      ? "bg-red-500/20 text-red-400 border-red-500/30"
+                      : "bg-[#0a0d14] border-white/10 text-gray-400 hover:text-red-400"
+                  }`}
+                  title={u.isBlocked ? "Blokdan chiqarish" : "Bloklash"}
+                >
+                  <Ban size={13} />
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -1724,14 +1727,14 @@ export default function App() {
     (async () => {
       try {
         const meRes = await client.get("/auth/me");
-        const u = meRes.data.user;
+        const u = meRes.data.user || meRes.data;
         setUser({
-          name: u.firstName || u.username || "Foydalanuvchi",
+          name: u.firstName || u.first_name || u.name || u.username || "Foydalanuvchi",
           username: u.username || "",
-          opened: u.casesOpened,
-          referralCode: u.referralCode,
+          opened: u.casesOpened || u.opened || 0,
+          referralCode: u.referralCode || "",
         });
-        setBalance(u.balance);
+        setBalance(u.balance || 0);
       } catch (err) {
         console.error("AUTH XATOSI:", err.response?.data || err.message);
       }
@@ -1772,7 +1775,7 @@ export default function App() {
           listRes.data.map((l) => ({
             ...l,
             skin: norm(l.skin),
-            seller: l.seller?.username || l.seller?.firstName || "user",
+            seller: l.seller?.username || l.seller?.firstName || l.seller?.first_name || "user",
           })),
         );
       } catch (err) {
