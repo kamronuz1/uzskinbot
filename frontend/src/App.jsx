@@ -1015,13 +1015,14 @@ function NumField({ label, value, onChange, placeholder = "" }) {
 }
 
 /* SKIN MODAL */
-function SkinModal({ isOpen, onClose, skin, onSave }) {
+function SkinModal({ isOpen, onClose, skin, onSave, cases }) {
   const [f, setF] = useState({
     name: "",
     type: "Miltiq",
     rarity: "common",
     price: "1",
     image: "",
+    caseId: "",
   });
 
   useEffect(() => {
@@ -1032,11 +1033,19 @@ function SkinModal({ isOpen, onClose, skin, onSave }) {
         rarity: skin.rarity || "common",
         price: skin.price?.toString() || "1",
         image: skin.image || "",
+        caseId: skin.caseId?._id || skin.caseId || (cases[0]?.id || ""),
       });
     } else {
-      setF({ name: "", type: "Miltiq", rarity: "common", price: "1", image: "" });
+      setF({ 
+        name: "", 
+        type: "Miltiq", 
+        rarity: "common", 
+        price: "1", 
+        image: "", 
+        caseId: cases[0]?.id || "" 
+      });
     }
-  }, [skin, isOpen]);
+  }, [skin, isOpen, cases]);
 
   if (!isOpen) return null;
 
@@ -1061,6 +1070,23 @@ function SkinModal({ isOpen, onClose, skin, onSave }) {
             <NumField label="Turi" value={f.type} onChange={set("type")} />
             <NumField label="Narxi ($)" value={f.price} onChange={set("price")} />
           </div>
+
+          {/* CASE SELECT INPUT (Qo'shildi) */}
+          <label className="flex flex-col gap-1">
+            <span className="text-[10px] font-bold text-gray-400">Case (Qaysi case'ga tegishli)</span>
+            <select
+              value={f.caseId}
+              onChange={(e) => set("caseId")(e.target.value)}
+              className="rounded-xl px-3 py-2 text-xs font-medium bg-[#0a0d14] border border-white/10 text-white outline-none"
+            >
+              {cases.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} (${fmt(c.price)})
+                </option>
+              ))}
+            </select>
+          </label>
+
           <label className="flex flex-col gap-1">
             <span className="text-[10px] font-bold text-gray-400">Rarity</span>
             <select
@@ -1079,6 +1105,7 @@ function SkinModal({ isOpen, onClose, skin, onSave }) {
           <button
             onClick={() => {
               if (!f.name.trim()) return alert("Nomini kiriting!");
+              if (!f.caseId) return alert("Case tanlanishi shart!");
               onSave({
                 ...f,
                 price: parseFloat(f.price) || 0,
@@ -1662,6 +1689,7 @@ function AdminScreen({
           }}
           skin={editingSkin}
           onSave={handleSaveSkin}
+          cases={cases}
         />
 
         {/* CASE MODAL */}
