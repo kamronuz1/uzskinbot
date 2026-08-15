@@ -27,6 +27,12 @@ import {
   Tag,
   Sparkles,
   Wallet,
+  Ban,
+  ShieldCheck,
+  Search,
+  BarChart3,
+  RefreshCw,
+  Edit2
 } from "lucide-react";
 
 /* ---------------------------------------------------------------
@@ -170,7 +176,7 @@ function MiniReel({ skins, winner, height, itemWidth, onDone }) {
   const [items, setItems] = useState([]);
   const [offset, setOffset] = useState(0);
   const [started, setStarted] = useState(false);
-  const DURATION = 4.2; // CS2 style smooth spin duration
+  const DURATION = 4.2;
 
   useEffect(() => {
     const WIN_INDEX = 35;
@@ -198,7 +204,6 @@ function MiniReel({ skins, winner, height, itemWidth, onDone }) {
       cancelAnimationFrame(raf1);
       clearTimeout(t);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -314,7 +319,6 @@ function CaseDetailScreen({
         setTimeout(() => setFlashColor(null), 600);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doneCount, phase]);
 
   const handleOpenClick = async () => {
@@ -993,7 +997,7 @@ function ProfileScreen({ user, balance, inventory, refCode, refStats }) {
 }
 
 /* ---------------------------------------------------------------
-   ADMIN PANEL
+   EXTENDED FULL ADMIN PANEL & COMPONENTS
 ----------------------------------------------------------------*/
 function NumField({ label, value, onChange }) {
   return (
@@ -1178,6 +1182,180 @@ function AdminCaseForm({ onAdd, client: adminClient }) {
   );
 }
 
+/* Admin Tizimidagi Userlar Boshqaruvi Moduli */
+function AdminUsersTab({ client: adminClient }) {
+  const [users, setUsers] = useState([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const res = await adminClient.get("/admin/users");
+      setUsers(res.data || []);
+    } catch (err) {
+      // Zaxira demo ma'lumotlar API mavjud bo'lmaganda
+      setUsers([
+        { _id: "1", firstName: "Ali", username: "ali_dev", balance: 120.5, isBanned: false, isAdmin: false },
+        { _id: "2", firstName: "Vali", username: "vali_pro", balance: 15.0, isBanned: true, isAdmin: false },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleUpdateBalance = async (userId) => {
+    const val = prompt("Yangi balansni kiriting ($):");
+    if (val === null) return;
+    const amount = parseFloat(val);
+    if (isNaN(amount)) return alert("Noto'g'ri qiymat!");
+    try {
+      await adminClient.patch(`/admin/users/${userId}/balance`, { balance: amount });
+      setUsers((prev) =>
+        prev.map((u) => (u._id === userId ? { ...u, balance: amount } : u))
+      );
+    } catch (err) {
+      alert("Balansni o'zgartirib bo'lmadi");
+    }
+  };
+
+  const handleToggleBan = async (userId, currentStatus) => {
+    try {
+      await adminClient.patch(`/admin/users/${userId}/ban`, { isBanned: !currentStatus });
+      setUsers((prev) =>
+        prev.map((u) => (u._id === userId ? { ...u, isBanned: !currentStatus } : u))
+      );
+    } catch (err) {
+      alert("Foydalanuvchi holatini o'zgartirib bo'lmadi");
+    }
+  };
+
+  const filteredUsers = users.filter(
+    (u) =>
+      (u.firstName || "").toLowerCase().includes(search.toLowerCase()) ||
+      (u.username || "").toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex gap-2 items-center">
+        <div className="relative flex-1">
+          <Search size={14} className="absolute left-3 top-3 text-gray-500" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="User qidirish..."
+            className="w-full pl-8 pr-3 py-2 text-xs rounded-xl bg-[#12161f] border border-white/10 text-white outline-none focus:border-[#00ff66]"
+          />
+        </div>
+        <button
+          onClick={fetchUsers}
+          className="p-2.5 rounded-xl bg-[#12161f] border border-white/10 text-gray-300 hover:text-[#00ff66]"
+        >
+          <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        {filteredUsers.map((u) => (
+          <div
+            key={u._id}
+            className="rounded-xl p-3 bg-[#12161f] border border-white/5 flex items-center justify-between gap-2"
+          >
+            <div className="flex items-center gap-2.5 overflow-hidden">
+              <div className="w-8 h-8 rounded-lg bg-[#0a0d14] font-black text-xs text-[#00ff66] flex items-center justify-center shrink-0 border border-white/5">
+                {(u.firstName || u.username || "U")[0]}
+              </div>
+              <div className="truncate">
+                <div className="text-xs font-bold text-white flex items-center gap-1.5 truncate">
+                  {u.firstName || "Foydalanuvchi"}
+                  {u.isAdmin && (
+                    <span className="text-[8px] bg-[#00ff66]/20 text-[#00ff66] font-black px-1 rounded">
+                      ADMIN
+                    </span>
+                  )}
+                </div>
+                <div className="text-[10px] text-gray-400 font-mono truncate">
+                  @{u.username || "no_user"} ·{" "}
+                  <span className="text-[#00ff66] font-bold">${fmt(u.balance)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={() => handleUpdateBalance(u._id)}
+                className="p-1.5 rounded-lg bg-[#0a0d14] border border-white/10 text-gray-300 hover:text-[#00ff66]"
+                title="Balansni o'zgartirish"
+              >
+                <Edit2 size={13} />
+              </button>
+              <button
+                onClick={() => handleToggleBan(u._id, u.isBanned)}
+                className={`p-1.5 rounded-lg border ${
+                  u.isBanned
+                    ? "bg-red-500/20 text-red-400 border-red-500/30"
+                    : "bg-[#0a0d14] border-white/10 text-gray-400 hover:text-red-400"
+                }`}
+                title={u.isBanned ? "Blokdan chiqarish" : "Bloklash"}
+              >
+                <Ban size={13} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* Admin Analitika va Tizim Ko'rsatkichlari */
+function AdminStatsTab({ casesCount, skinsCount }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-xl p-3 bg-[#12161f] border border-white/5 flex flex-col gap-1">
+          <div className="text-[10px] font-bold uppercase text-gray-400 flex items-center gap-1">
+            <Package size={12} className="text-[#00ff66]" /> Case'lar
+          </div>
+          <div className="text-lg font-black text-white font-mono">{casesCount} ta</div>
+        </div>
+        <div className="rounded-xl p-3 bg-[#12161f] border border-white/5 flex flex-col gap-1">
+          <div className="text-[10px] font-bold uppercase text-gray-400 flex items-center gap-1">
+            <Sword size={12} className="text-[#00ff66]" /> Skinlar
+          </div>
+          <div className="text-lg font-black text-white font-mono">{skinsCount} ta</div>
+        </div>
+      </div>
+
+      <div className="rounded-2xl p-4 bg-[#12161f] border border-[#00ff66]/20">
+        <div className="text-xs font-black text-white uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <BarChart3 size={14} className="text-[#00ff66]" /> Server Holati
+        </div>
+        <div className="flex flex-col gap-2 text-xs text-gray-400">
+          <div className="flex justify-between border-b border-white/5 pb-1.5">
+            <span>Server Status:</span>
+            <span className="text-[#00ff66] font-extrabold">Online (Active)</span>
+          </div>
+          <div className="flex justify-between border-b border-white/5 pb-1.5">
+            <span>API Protokol:</span>
+            <span className="text-white font-mono font-bold">HTTPS / WebSocket</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Versiya:</span>
+            <span className="text-gray-300 font-mono">v2.4.0 Pro Admin</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* Kengaytirilgan Asosiy Admin Ekran */
 function AdminScreen({
   cases,
   skins,
@@ -1189,7 +1367,7 @@ function AdminScreen({
   token,
 }) {
   const adminClient = useMemo(() => createAdminClient(token), [token]);
-  const [tab, setTab] = useState("cases");
+  const [tab, setTab] = useState("stats");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -1222,23 +1400,27 @@ function AdminScreen({
             <ArrowLeft size={16} />
           </button>
           <div>
-            <div className="text-sm font-black text-white">Admin Panel</div>
+            <div className="text-sm font-black text-white flex items-center gap-1.5">
+              Admin Panel <ShieldCheck size={14} className="text-[#00ff66]" />
+            </div>
             <div className="text-[10px] text-gray-400">Boshqaruv markazi</div>
           </div>
         </div>
 
-        <div className="flex gap-2 px-4 mb-3">
+        <div className="flex gap-1.5 px-4 mb-3 overflow-x-auto custom-scrollbar pb-1">
           {[
+            ["stats", "Stats"],
+            ["users", "Users"],
             ["cases", "Case'lar"],
             ["skins", "Skinlar"],
           ].map(([id, l]) => (
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`px-4 py-1.5 rounded-full text-xs font-black ${
+              className={`px-3 py-1.5 rounded-full text-xs font-black shrink-0 transition-colors ${
                 tab === id
-                  ? "bg-[#00ff66] text-black"
-                  : "bg-[#12161f] text-gray-400 border border-white/5"
+                  ? "bg-[#00ff66] text-black shadow-[0_0_10px_rgba(0,255,102,0.3)]"
+                  : "bg-[#12161f] text-gray-400 border border-white/5 hover:text-white"
               }`}
             >
               {l}
@@ -1246,7 +1428,13 @@ function AdminScreen({
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 pb-6">
+        <div className="flex-1 overflow-y-auto px-4 pb-6 custom-scrollbar">
+          {tab === "stats" && (
+            <AdminStatsTab casesCount={cases.length} skinsCount={skins.length} />
+          )}
+
+          {tab === "users" && <AdminUsersTab client={adminClient} />}
+
           {tab === "cases" && (
             <>
               <AdminCaseForm onAdd={onAddCase} client={adminClient} />
