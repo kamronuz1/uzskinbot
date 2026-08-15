@@ -289,13 +289,20 @@ function CaseDetailScreen({
   const [selling, setSelling] = useState(false);
 
   const Icon = iconFor(cs.id);
+
+  // Faqat shu case'ga tegishli skinlarni filterlaymiz (caseId bo'yicha)
   const eligible = skins
-    .filter((s) => (cs.odds?.[s.rarity] || 0) > 0)
+    .filter((s) => {
+      const sCaseId = typeof s.caseId === "object" ? s.caseId?._id : s.caseId;
+      const currentCaseId = typeof cs.id === "object" ? cs.id?._id : cs.id;
+      return sCaseId === currentCaseId && (cs.odds?.[s.rarity] || 0) > 0;
+    })
     .sort(
       (a, b) =>
         RARITY_ORDER.indexOf(b.rarity) - RARITY_ORDER.indexOf(a.rarity) ||
         b.price - a.price,
     );
+
   const totalPrice = cs.price * qty;
   const canAfford = balance >= totalPrice;
 
@@ -489,7 +496,7 @@ function CaseDetailScreen({
               {winners.map((w, i) => (
                 <MiniReel
                   key={i}
-                  skins={skins}
+                  skins={eligible}
                   winner={w.skin}
                   height={reelH}
                   itemWidth={reelW}
@@ -1071,7 +1078,6 @@ function SkinModal({ isOpen, onClose, skin, onSave, cases }) {
             <NumField label="Narxi ($)" value={f.price} onChange={set("price")} />
           </div>
 
-          {/* CASE SELECT INPUT (Qo'shildi) */}
           <label className="flex flex-col gap-1">
             <span className="text-[10px] font-bold text-gray-400">Case (Qaysi case'ga tegishli)</span>
             <select
