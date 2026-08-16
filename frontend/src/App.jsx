@@ -628,7 +628,6 @@ function HomeScreen({
   nav,
   onAdmin,
 }) {
-  // Kunlik bonus ortga qaytish taymeri uchun state
   const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {
@@ -637,14 +636,12 @@ function HomeScreen({
       return;
     }
 
-    // Agar dailyClaimedAt kelmagan bo'lsa, hozirgi vaqtni asos qilib olamiz yoki 24 soat beramiz
     if (!dailyClaimedAt) {
-      setTimeLeft("24:00:00");
+      setTimeLeft("Ertaga");
       return;
     }
 
     const updateTimer = () => {
-      // dailyClaimedAt ni to'g'ri formatga o'tkazamiz (raqam bo'lsa o'zini olamiz, matn bo'lsa new Date qilamiz)
       const lastClaim = typeof dailyClaimedAt === 'number' ? dailyClaimedAt : new Date(dailyClaimedAt).getTime();
       const targetTime = lastClaim + 24 * 60 * 60 * 1000;
       const now = Date.now();
@@ -669,7 +666,6 @@ function HomeScreen({
     return () => clearInterval(interval);
   }, [dailyAvailable, dailyClaimedAt]);
 
-  // Afsonaviy (legend) va Mifik (myth) skinlarni filterlab olamiz
   const topCarouselSkins = useMemo(() => {
     const filtered = skins.filter(s => s.rarity === "legend" || s.rarity === "myth");
     return filtered.length > 0 ? filtered : skins.slice(0, 5);
@@ -677,7 +673,6 @@ function HomeScreen({
 
   const [carouselIndex, setCarouselIndex] = useState(0);
 
-  // Har 3 sekundda karuselni siljitib turish
   useEffect(() => {
     if (topCarouselSkins.length <= 1) return;
     const timer = setInterval(() => {
@@ -725,7 +720,7 @@ function HomeScreen({
         </div>
       </div>
 
-      {/* KUNLIK BONUS QISMI */}
+      {/* KUNLIK BONUS QISMI ($1.00 va Keyingi Bonus Ertaga) */}
       <div className="mx-4 mb-6 rounded-xl p-3.5 flex items-center justify-between bg-[#12161f] border border-white/5">
         <div className="flex items-center gap-3">
           <div
@@ -739,8 +734,8 @@ function HomeScreen({
           </div>
           <div>
             <div className="text-xs font-bold text-white">Kunlik Bonus</div>
-            <div className="text-[10px] text-gray-400">
-              {dailyAvailable ? "+$0.10 tayyor" : `Keyingi bonus: ${timeLeft || "24:00:00"}`}
+            <div className="text-[10px] text-gray-400 font-medium">
+              {dailyAvailable ? "+$1.00 tayyor" : `Keyingi Bonus Ertaga (${timeLeft || "24:00:00"})`}
             </div>
           </div>
         </div>
@@ -753,7 +748,7 @@ function HomeScreen({
               : "bg-gray-800 text-gray-400 cursor-not-allowed font-mono"
           }`}
         >
-          {dailyAvailable ? "Olish" : timeLeft || "Olindi"}
+          {dailyAvailable ? "Olish" : "Ertaga"}
         </button>
       </div>
 
@@ -774,7 +769,7 @@ function HomeScreen({
         ))}
       </div>
 
-      {/* TOP SKINLAR (MIFIK VA AFSONAVIY KARUSELI) */}
+      {/* TOP SKINLAR */}
       <div className="px-4 mt-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-1.5">
@@ -1524,7 +1519,7 @@ function AdminStatsTab({ casesCount, skinsCount }) {
   );
 }
 
-/* MAIN ADMIN SCREEN WITH COMPACT SINGLE ROW SKINS LIST */
+/* MAIN ADMIN SCREEN */
 function AdminScreen({
   cases,
   skins,
@@ -1857,7 +1852,6 @@ export default function App() {
       try {
         const meRes = await client.get("/auth/me");
         const u = meRes.data.user || meRes.data;
-        console.log("SERVERDAN KELGAN USER:", u);
         setUser({
           name: u.firstName || u.first_name || u.name || u.username || "Foydalanuvchi",
           username: u.username || "",
@@ -1932,7 +1926,7 @@ export default function App() {
       setBalance(res.data.balance);
       setDailyAvailable(false);
       setDailyClaimedAt(new Date().toISOString());
-      addTx("Kunlik bonus", 0.1);
+      addTx("Kunlik bonus", 1.0);
       await fetchDailyStatus();
     } catch (err) {
       alert(err.response?.data?.error || "Xatolik");

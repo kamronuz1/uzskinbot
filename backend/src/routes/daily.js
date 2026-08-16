@@ -5,7 +5,7 @@ const DailyBonus = require('../models/DailyBonus');
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 
-const BONUS_AMOUNT = 0.10;
+const BONUS_AMOUNT = 1;
 
 router.get('/status', telegramAuth, async (req, res) => {
   const last = await DailyBonus.findOne({ user: req.user._id }).sort({ claimedAt: -1 });
