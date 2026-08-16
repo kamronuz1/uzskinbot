@@ -632,23 +632,21 @@ function HomeScreen({
   const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {
-    // Agar bonus olish mumkin bo'lsa yoki oxirgi olingan vaqt umuman yo'q bo'lsa
-    if (dailyAvailable || !dailyClaimedAt) {
+    // Agar bonus olish mumkin bo'lsa, taymerni bo'sh qoldiramiz
+    if (dailyAvailable) {
       setTimeLeft("");
       return;
     }
-    
-    // Serverdan kelgan dailyClaimedAt asosida aniq 24 soatlik taymer hisoblash
+
+    // Agar claimed vaqt umuman kelmagan bo'lsa
+    if (!dailyClaimedAt) {
+      setTimeLeft("24:00:00");
+      return;
+    }
+
     const updateTimer = () => {
       const lastClaim = new Date(dailyClaimedAt).getTime();
-      
-      // Agar sana noto'g'ri formatda kelsa
-      if (isNaN(lastClaim)) {
-        setTimeLeft("");
-        return;
-      }
-
-      const targetTime = lastClaim + 24 * 60 * 60 * 1000;
+      const targetTime = lastClaim + 24 * 60 * 60 * 1000; // 24 soat qo'shiladi
       const now = Date.now();
       const diff = targetTime - now;
 
@@ -657,7 +655,8 @@ function HomeScreen({
         return;
       }
 
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      // 24 soat ichidagi qolgan soat, daqiqa, sekundlarni to'g'ri hisoblash
+      const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
