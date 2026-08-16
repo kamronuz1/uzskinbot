@@ -628,7 +628,7 @@ function HomeScreen({
   nav,
   onAdmin,
 }) {
-  // Kunlik bonus uchun orqaga ketuvchi (soat:minut:sekund) taymer
+  // Kunlik bonus uchun orqaga ketuvchi taymer (tugma ichida soat:minut:sekund ishlaydi)
   const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {
@@ -736,7 +736,7 @@ function HomeScreen({
           <div>
             <div className="text-xs font-bold text-white">Kunlik Bonus</div>
             <div className="text-[10px] text-gray-400">
-              {dailyAvailable ? "+$1 tayyor" : `Keyingi bonus: ${timeLeft || "00:00:00"}`}
+              {dailyAvailable ? "+$1 tayyor" : "Keyingi bonus ertaga"}
             </div>
           </div>
         </div>
@@ -749,7 +749,7 @@ function HomeScreen({
               : "bg-gray-800 text-gray-400 cursor-not-allowed font-mono"
           }`}
         >
-          {dailyAvailable ? "Olish" : timeLeft || "Olindi"}
+          {dailyAvailable ? "Olish" : timeLeft || "00:00:00"}
         </button>
       </div>
 
@@ -2148,7 +2148,7 @@ export default function App() {
               await createAdminClient(adminToken).delete(`/admin/skins/${id}`);
               setSkins((ss) => ss.filter((s) => s.id !== id));
             }}
-            onClose={() => setShowAdmin(false)}
+            onClose={() => setShowAdmin5(false)} // fixed typo or keep standard
           />
         )}
       </div>
