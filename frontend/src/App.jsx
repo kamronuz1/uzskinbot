@@ -623,6 +623,7 @@ function HomeScreen({
   skins,
   onOpenCase,
   dailyAvailable,
+  dailyClaimedAt,
   onDaily,
   nav,
   onAdmin,
@@ -631,13 +632,17 @@ function HomeScreen({
   const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {
-    if (dailyAvailable) return;
+    if (dailyAvailable) {
+      setTimeLeft("");
+      return;
+    }
     
-    // Har sekundda keyingi kunlik bonus vaqtini hisoblab borish (24 soatlik sikl yoki ertangi 00:00 gacha)
+    // Serverdan kelgan dailyClaimedAt asosida aniq 24 soatlik taymer hisoblash
     const updateTimer = () => {
-      const now = new Date();
-      const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
-      const diff = tomorrow - now;
+      const lastClaim = dailyClaimedAt ? new Date(dailyClaimedAt).getTime() : 0;
+      const targetTime = lastClaim + 24 * 60 * 60 * 1000;
+      const now = Date.now();
+      const diff = targetTime - now;
 
       if (diff <= 0) {
         setTimeLeft("00:00:00");
@@ -656,7 +661,7 @@ function HomeScreen({
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [dailyAvailable]);
+  }, [dailyAvailable, dailyClaimedAt]);
 
   // Afsonaviy (legend) va Mifik (myth) skinlarni filterlab olamiz
   const topCarouselSkins = useMemo(() => {
@@ -729,7 +734,7 @@ function HomeScreen({
           <div>
             <div className="text-xs font-bold text-white">Kunlik Bonus</div>
             <div className="text-[10px] text-gray-400">
-              {dailyAvailable ? "+$0.10 tayyor" : `Keyingi bonus: ${timeLeft}`}
+              {dailyAvailable ? "+$0.10 tayyor" : `Keyingi bonus: ${timeLeft || "24:00:00"}`}
             </div>
           </div>
         </div>
@@ -767,7 +772,7 @@ function HomeScreen({
       <div className="px-4 mt-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-            <Sparkles size={16} className="text-[#00ff66]" /> Top Skinlar (Afsonaviy & Mifik)
+            <Sparkles size={16} className="text-[#00ff66]" /> Top Skinlar
           </h2>
           <div className="flex gap-1">
             {topCarouselSkins.map((_, idx) => (
@@ -1022,7 +1027,7 @@ function ProfileScreen({ user, balance, inventory, refCode, refStats }) {
         {[
           ["Balans", `$${fmt(balance)}`],
           ["Skinlar", inventory.length],
-          ["Case", user.opened],
+          ["Jami Ochilgan Caselar", user.opened],
         ].map(([l, v]) => (
           <div key={l} className="rounded-xl p-3 text-center bg-[#12161f] border border-white/5">
             <div className="text-sm font-black text-white font-mono">{v}</div>
@@ -1806,6 +1811,7 @@ export default function App() {
   const [inventory, setInventory] = useState([]);
   const [viewingCase, setViewingCase] = useState(null);
   const [dailyAvailable, setDailyAvailable] = useState(false);
+  const [dailyClaimedAt, setDailyClaimedAt] = useState(null);
   const [txs, setTxs] = useState([]);
   const [user, setUser] = useState({
     name: "...",
@@ -1825,6 +1831,18 @@ export default function App() {
       );
     } catch (err) {
       console.error("INVENTORY FETCH XATOSI:", err);
+    }
+  };
+
+  const fetchDailyStatus = async () => {
+    try {
+      const dailyRes = await client.get("/daily/status");
+      setDailyAvailable(dailyRes.data.available);
+      if (dailyRes.data.claimedAt) {
+        setDailyClaimedAt(dailyRes.data.claimedAt);
+      }
+    } catch (err) {
+      console.error("DAILY XATOSI:", err.response?.data || err.message);
     }
   };
 
@@ -1858,13 +1876,7 @@ export default function App() {
         console.error("SKINS XATOSI:", err.response?.data || err.message);
       }
 
-      try {
-        const dailyRes = await client.get("/daily/status");
-        setDailyAvailable(dailyRes.data.available);
-      } catch (err) {
-        console.error("DAILY XATOSI:", err.response?.data || err.message);
-      }
-
+      await fetchDailyStatus();
       await fetchInventory();
 
       try {
@@ -1910,7 +1922,9 @@ export default function App() {
       const res = await client.post("/daily/claim");
       setBalance(res.data.balance);
       setDailyAvailable(false);
+      setDailyClaimedAt(new Date().toISOString());
       addTx("Kunlik bonus", 0.1);
+      await fetchDailyStatus();
     } catch (err) {
       alert(err.response?.data?.error || "Xatolik");
     }
@@ -2020,6 +2034,7 @@ export default function App() {
                   skins={skins}
                   onOpenCase={setViewingCase}
                   dailyAvailable={dailyAvailable}
+                  dailyClaimedAt={dailyClaimedAt}
                   onDaily={handleDaily}
                   nav={goTab}
                   onAdmin={handleAdminClick}
