@@ -632,14 +632,22 @@ function HomeScreen({
   const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {
-    if (dailyAvailable) {
+    // Agar bonus olish mumkin bo'lsa yoki oxirgi olingan vaqt umuman yo'q bo'lsa
+    if (dailyAvailable || !dailyClaimedAt) {
       setTimeLeft("");
       return;
     }
     
     // Serverdan kelgan dailyClaimedAt asosida aniq 24 soatlik taymer hisoblash
     const updateTimer = () => {
-      const lastClaim = dailyClaimedAt ? new Date(dailyClaimedAt).getTime() : 0;
+      const lastClaim = new Date(dailyClaimedAt).getTime();
+      
+      // Agar sana noto'g'ri formatda kelsa
+      if (isNaN(lastClaim)) {
+        setTimeLeft("");
+        return;
+      }
+
       const targetTime = lastClaim + 24 * 60 * 60 * 1000;
       const now = Date.now();
       const diff = targetTime - now;
