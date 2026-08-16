@@ -665,6 +665,14 @@ function HomeScreen({
     return () => clearInterval(interval);
   }, [dailyAvailable, dailyClaimedAt]);
 
+  // Bugun olgan vaqtini formatlash (masalan: 10:00)
+  const formattedClaimTime = useMemo(() => {
+    if (!dailyClaimedAt) return "";
+    const date = new Date(typeof dailyClaimedAt === 'number' ? dailyClaimedAt : dailyClaimedAt);
+    if (isNaN(date.getTime())) return "";
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  }, [dailyClaimedAt]);
+
   // Afsonaviy (legend) va Mifik (myth) skinlarni filterlab olamiz
   const topCarouselSkins = useMemo(() => {
     const filtered = skins.filter(s => s.rarity === "legend" || s.rarity === "myth");
@@ -736,7 +744,7 @@ function HomeScreen({
           <div>
             <div className="text-xs font-bold text-white">Kunlik Bonus</div>
             <div className="text-[10px] text-gray-400">
-              {dailyAvailable ? "1$ tayyor" : `Keyingi bonus: ${timeLeft || "00:00:00"}`}
+              {dailyAvailable ? "1$ tayyor" : `Keyingi bonus: ${formattedClaimTime || "00:00"}`}
             </div>
           </div>
         </div>
