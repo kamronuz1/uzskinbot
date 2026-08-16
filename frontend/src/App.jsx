@@ -628,17 +628,17 @@ function HomeScreen({
   nav,
   onAdmin,
 }) {
-  // Kunlik bonus uchun aniq vaqtni (soat:minut) ko'rsatish
-  const [nextBonusTime, setNextBonusTime] = useState("");
+  // Kunlik bonus uchun orqaga ketuvchi (soat:minut:sekund) taymer
+  const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {
     if (dailyAvailable) {
-      setNextBonusTime("");
+      setTimeLeft("");
       return;
     }
 
     if (!dailyClaimedAt) {
-      setNextBonusTime("Ertaga");
+      setTimeLeft("00:00:00");
       return;
     }
 
@@ -649,16 +649,15 @@ function HomeScreen({
       const diff = targetTime - now;
 
       if (diff <= 0) {
-        setNextBonusTime("Tayyor");
+        setTimeLeft("00:00:00");
         return;
       }
 
-      // Bonus olingan aniq vaqtni (soat va minutni) chiqarish
-      const targetDate = new Date(targetTime);
-      const hours = String(targetDate.getHours()).padStart(2, "0");
-      const minutes = String(targetDate.getMinutes()).padStart(2, "0");
+      const hours = String(Math.floor((diff / (1000 * 60 * 60)) % 24)).padStart(2, "0");
+      const minutes = String(Math.floor((diff / (1000 * 60)) % 60)).padStart(2, "0");
+      const seconds = String(Math.floor((diff / 1000) % 60)).padStart(2, "0");
 
-      setNextBonusTime(`${hours}:${minutes}`);
+      setTimeLeft(`${hours}:${minutes}:${seconds}`);
     };
 
     updateTimer();
@@ -737,7 +736,7 @@ function HomeScreen({
           <div>
             <div className="text-xs font-bold text-white">Kunlik Bonus</div>
             <div className="text-[10px] text-gray-400">
-              {dailyAvailable ? "+$1 tayyor" : `Keyingi bonus ertaga: ${nextBonusTime || "00:00"}`}
+              {dailyAvailable ? "+$1 tayyor" : `Keyingi bonus: ${timeLeft || "00:00:00"}`}
             </div>
           </div>
         </div>
@@ -750,7 +749,7 @@ function HomeScreen({
               : "bg-gray-800 text-gray-400 cursor-not-allowed font-mono"
           }`}
         >
-          {dailyAvailable ? "Olish" : nextBonusTime || "Olindi"}
+          {dailyAvailable ? "Olish" : timeLeft || "Olindi"}
         </button>
       </div>
 
