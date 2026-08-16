@@ -1863,6 +1863,8 @@ export default function App() {
           opened: u.casesOpened || u.opened || 0,
           referralCode: u.referralCode || "",
         });
+
+        setDailyClaimedAt(u.dailyClaimedAt || u.claimedAt);
         setBalance(u.balance || 0);
       } catch (err) {
         console.error("AUTH XATOSI:", err.response?.data || err.message);
