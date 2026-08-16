@@ -1857,6 +1857,7 @@ export default function App() {
       try {
         const meRes = await client.get("/auth/me");
         const u = meRes.data.user || meRes.data;
+        console.log("SERVERDAN KELGAN USER:", u);
         setUser({
           name: u.firstName || u.first_name || u.name || u.username || "Foydalanuvchi",
           username: u.username || "",
