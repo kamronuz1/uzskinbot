@@ -628,7 +628,7 @@ function HomeScreen({
   nav,
   onAdmin,
 }) {
-  // Kunlik bonus uchun orqaga ketuvchi taymer (tugma ichida soat:minut:sekund ishlaydi)
+  // Kunlik bonus uchun orqaga ketuvchi taymer
   const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {
@@ -736,7 +736,7 @@ function HomeScreen({
           <div>
             <div className="text-xs font-bold text-white">Kunlik Bonus</div>
             <div className="text-[10px] text-gray-400">
-              {dailyAvailable ? "+$1 tayyor" : "Keyingi bonus ertaga"}
+              {dailyAvailable ? "1$ tayyor" : `Keyingi bonus: ${timeLeft || "00:00:00"}`}
             </div>
           </div>
         </div>
@@ -770,7 +770,7 @@ function HomeScreen({
         ))}
       </div>
 
-      {/* TOP SKINLAR (MIFIK VA AFSONAVIY KARUSELI) */}
+      {/* TOP SKINLAR KARUSELI */}
       <div className="px-4 mt-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-1.5">
@@ -1520,7 +1520,7 @@ function AdminStatsTab({ casesCount, skinsCount }) {
   );
 }
 
-/* MAIN ADMIN SCREEN WITH COMPACT SINGLE ROW SKINS LIST */
+/* MAIN ADMIN SCREEN */
 function AdminScreen({
   cases,
   skins,
@@ -1853,7 +1853,6 @@ export default function App() {
       try {
         const meRes = await client.get("/auth/me");
         const u = meRes.data.user || meRes.data;
-        console.log("SERVERDAN KELGAN USER:", u);
         setUser({
           name: u.firstName || u.first_name || u.name || u.username || "Foydalanuvchi",
           username: u.username || "",
@@ -2148,7 +2147,7 @@ export default function App() {
               await createAdminClient(adminToken).delete(`/admin/skins/${id}`);
               setSkins((ss) => ss.filter((s) => s.id !== id));
             }}
-            onClose={() => setShowAdmin5(false)} // fixed typo or keep standard
+            onClose={() => setShowAdmin(false)}
           />
         )}
       </div>
