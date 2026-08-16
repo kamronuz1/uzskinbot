@@ -1935,7 +1935,7 @@ export default function App() {
       setBalance(res.data.balance);
       setDailyAvailable(false);
       setDailyClaimedAt(new Date().toISOString());
-      addTx("Kunlik bonus", 0.1);
+      addTx("Kunlik bonus", 1);
       await fetchDailyStatus();
     } catch (err) {
       alert(err.response?.data?.error || "Xatolik");
