@@ -628,40 +628,37 @@ function HomeScreen({
   nav,
   onAdmin,
 }) {
-  // Kunlik bonus ortga qaytish taymeri uchun state
-  const [timeLeft, setTimeLeft] = useState("");
+  // Kunlik bonus uchun aniq vaqtni (soat:minut) ko'rsatish
+  const [nextBonusTime, setNextBonusTime] = useState("");
 
   useEffect(() => {
     if (dailyAvailable) {
-      setTimeLeft("");
+      setNextBonusTime("");
       return;
     }
 
-    // Agar dailyClaimedAt kelmagan bo'lsa, hozirgi vaqtni asos qilib olamiz yoki 24 soat beramiz
     if (!dailyClaimedAt) {
-      setTimeLeft("24:00:00");
+      setNextBonusTime("Ertaga");
       return;
     }
 
     const updateTimer = () => {
-      // dailyClaimedAt ni to'g'ri formatga o'tkazamiz (raqam bo'lsa o'zini olamiz, matn bo'lsa new Date qilamiz)
       const lastClaim = typeof dailyClaimedAt === 'number' ? dailyClaimedAt : new Date(dailyClaimedAt).getTime();
       const targetTime = lastClaim + 24 * 60 * 60 * 1000;
       const now = Date.now();
       const diff = targetTime - now;
 
       if (diff <= 0) {
-        setTimeLeft("00:00:00");
+        setNextBonusTime("Tayyor");
         return;
       }
 
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      // Bonus olingan aniq vaqtni (soat va minutni) chiqarish
+      const targetDate = new Date(targetTime);
+      const hours = String(targetDate.getHours()).padStart(2, "0");
+      const minutes = String(targetDate.getMinutes()).padStart(2, "0");
 
-      setTimeLeft(
-        `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
-      );
+      setNextBonusTime(`${hours}:${minutes}`);
     };
 
     updateTimer();
@@ -739,6 +736,9 @@ function HomeScreen({
           </div>
           <div>
             <div className="text-xs font-bold text-white">Kunlik Bonus</div>
+            <div className="text-[10px] text-gray-400">
+              {dailyAvailable ? "+$1 tayyor" : `Keyingi bonus ertaga: ${nextBonusTime || "00:00"}`}
+            </div>
           </div>
         </div>
         <button
@@ -750,7 +750,7 @@ function HomeScreen({
               : "bg-gray-800 text-gray-400 cursor-not-allowed font-mono"
           }`}
         >
-          {dailyAvailable ? "Olish" : timeLeft || "Olindi"}
+          {dailyAvailable ? "Olish" : nextBonusTime || "Olindi"}
         </button>
       </div>
 
