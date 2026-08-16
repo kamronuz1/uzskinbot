@@ -290,7 +290,6 @@ function CaseDetailScreen({
 
   const Icon = iconFor(cs.id);
 
-  // Faqat shu case'ga tegishli skinlarni filterlaymiz (caseId bo'yicha)
   const eligible = skins
     .filter((s) => {
       const sCaseId = typeof s.caseId === "object" ? s.caseId?._id : s.caseId;
@@ -628,6 +627,54 @@ function HomeScreen({
   nav,
   onAdmin,
 }) {
+  // Kunlik bonus ortga qaytish taymeri uchun state
+  const [timeLeft, setTimeLeft] = useState("");
+
+  useEffect(() => {
+    if (dailyAvailable) return;
+    
+    // Har sekundda keyingi kunlik bonus vaqtini hisoblab borish (24 soatlik sikl yoki ertangi 00:00 gacha)
+    const updateTimer = () => {
+      const now = new Date();
+      const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+      const diff = tomorrow - now;
+
+      if (diff <= 0) {
+        setTimeLeft("00:00:00");
+        return;
+      }
+
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      setTimeLeft(
+        `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+      );
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [dailyAvailable]);
+
+  // Afsonaviy (legend) va Mifik (myth) skinlarni filterlab olamiz
+  const topCarouselSkins = useMemo(() => {
+    const filtered = skins.filter(s => s.rarity === "legend" || s.rarity === "myth");
+    return filtered.length > 0 ? filtered : skins.slice(0, 5);
+  }, [skins]);
+
+  const [carouselIndex, setCarouselIndex] = useState(0);
+
+  // Har 3 sekundda karuselni siljitib turish
+  useEffect(() => {
+    if (topCarouselSkins.length <= 1) return;
+    const timer = setInterval(() => {
+      setCarouselIndex((prev) => (prev + 1) % topCarouselSkins.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [topCarouselSkins.length]);
+
   return (
     <div className="pb-28">
       <div className="flex items-center justify-between px-5 pt-6 pb-4">
@@ -667,6 +714,7 @@ function HomeScreen({
         </div>
       </div>
 
+      {/* KUNLIK BONUS QISMI */}
       <div className="mx-4 mb-6 rounded-xl p-3.5 flex items-center justify-between bg-[#12161f] border border-white/5">
         <div className="flex items-center gap-3">
           <div
@@ -681,7 +729,7 @@ function HomeScreen({
           <div>
             <div className="text-xs font-bold text-white">Kunlik Bonus</div>
             <div className="text-[10px] text-gray-400">
-              {dailyAvailable ? "+$0.10 tayyor" : "Ertaga qayting"}
+              {dailyAvailable ? "+$0.10 tayyor" : `Keyingi bonus: ${timeLeft}`}
             </div>
           </div>
         </div>
@@ -691,10 +739,10 @@ function HomeScreen({
           className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
             dailyAvailable
               ? "bg-[#00ff66] text-black hover:bg-[#00e65c]"
-              : "bg-gray-800 text-gray-500 cursor-not-allowed"
+              : "bg-gray-800 text-gray-400 cursor-not-allowed font-mono"
           }`}
         >
-          {dailyAvailable ? "Olish" : "Olindi"}
+          {dailyAvailable ? "Olish" : timeLeft || "Olindi"}
         </button>
       </div>
 
@@ -715,15 +763,44 @@ function HomeScreen({
         ))}
       </div>
 
+      {/* TOP SKINLAR (MIFIK VA AFSONAVIY KARUSELI) */}
       <div className="px-4 mt-6">
-        <h2 className="text-sm font-black text-white uppercase tracking-wider mb-3 flex items-center gap-1.5">
-          <Sparkles size={16} className="text-[#00ff66]" /> Top Skinlar
-        </h2>
-        <div className="grid grid-cols-3 gap-3">
-          {skins.slice(0, 3).map((s) => (
-            <SkinCard key={s.id} skin={s} />
-          ))}
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+            <Sparkles size={16} className="text-[#00ff66]" /> Top Skinlar (Afsonaviy & Mifik)
+          </h2>
+          <div className="flex gap-1">
+            {topCarouselSkins.map((_, idx) => (
+              <span
+                key={idx}
+                className={`h-1 rounded-full transition-all duration-300 ${
+                  carouselIndex === idx ? "w-4 bg-[#00ff66]" : "w-1.5 bg-gray-700"
+                }`}
+              />
+            ))}
+          </div>
         </div>
+
+        {topCarouselSkins.length > 0 ? (
+          <div className="overflow-hidden relative rounded-xl">
+            <div
+              className="flex transition-transform duration-500 ease-in-out"
+              style={{ transform: `translateX(-${carouselIndex * 100}%)` }}
+            >
+              {topCarouselSkins.map((s) => (
+                <div key={s.id} className="w-full flex-shrink-0">
+                  <SkinCard skin={s} size="lg" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-3">
+            {skins.slice(0, 3).map((s) => (
+              <SkinCard key={s.id} skin={s} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1453,7 +1530,6 @@ function AdminScreen({
   const [tab, setTab] = useState("skins");
   const [mounted, setMounted] = useState(false);
 
-  // Modal States
   const [skinModalOpen, setSkinModalOpen] = useState(false);
   const [editingSkin, setEditingSkin] = useState(null);
 
@@ -1465,7 +1541,6 @@ function AdminScreen({
     return () => cancelAnimationFrame(t);
   }, []);
 
-  /* Skin Handlers */
   const handleSaveSkin = async (data) => {
     try {
       if (editingSkin) {
@@ -1482,7 +1557,6 @@ function AdminScreen({
     }
   };
 
-  /* Case Handlers */
   const handleSaveCase = async (data) => {
     try {
       if (editingCase) {
@@ -1617,7 +1691,6 @@ function AdminScreen({
             </div>
           )}
 
-          {/* SINGLE-ROW COMPACT SKINS LIST WITHOUT IMAGES */}
           {tab === "skins" && (
             <div className="flex flex-col gap-2">
               <button
@@ -1686,7 +1759,6 @@ function AdminScreen({
           )}
         </div>
 
-        {/* SKIN MODAL */}
         <SkinModal
           isOpen={skinModalOpen}
           onClose={() => {
@@ -1698,7 +1770,6 @@ function AdminScreen({
           cases={cases}
         />
 
-        {/* CASE MODAL */}
         <CaseModal
           isOpen={caseModalOpen}
           onClose={() => {
@@ -1923,10 +1994,8 @@ export default function App() {
         @keyframes dropIn { 0% { opacity:0; transform:scale(.6) translateY(10px);} 60% { opacity:1; transform:scale(1.06) translateY(0);} 100% { transform:scale(1); opacity:1; } }
       `}</style>
 
-      {/* MOBILE FRAME WRAPPER */}
       <div className="w-full max-w-[400px] h-[100vh] md:h-[750px] relative overflow-hidden bg-[#0a0d14] md:rounded-[32px] border-0 md:border md:border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col font-sans">
         
-        {/* MAIN CONTENT AREA */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           {viewingCase ? (
             <CaseDetailScreen
@@ -1989,7 +2058,6 @@ export default function App() {
           )}
         </div>
 
-        {/* BOTTOM NAVIGATION BAR */}
         <div className="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-[#0a0d14] via-[#0a0d14]/90 to-transparent pointer-events-none">
           <div className="rounded-2xl bg-[#12161f]/95 border border-white/10 backdrop-blur-md flex items-center justify-around py-2.5 shadow-[0_0_20px_rgba(0,0,0,0.5)] pointer-events-auto">
             {NAV.map((n) => {
@@ -2025,7 +2093,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* ADMIN CHECKING MODAL */}
         {adminChecking && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
             <div className="px-5 py-3 rounded-xl text-xs font-black text-[#00ff66] bg-[#12161f] border border-[#00ff66]/30 shadow-2xl animate-pulse">
@@ -2034,7 +2101,6 @@ export default function App() {
           </div>
         )}
 
-        {/* ADMIN PANEL OVERLAY */}
         {showAdmin && (
           <AdminScreen
             cases={cases}
